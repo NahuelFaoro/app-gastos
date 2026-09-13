@@ -1,0 +1,39 @@
+# Entornos y caches de Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Datos personales y credenciales locales
+.env
+.env.*
+!.env.example
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.pem
+*.key
+backups/
+exports/
+
+# Compilaciones y diagnosticos locales
+build/
+dist/
+*.egg-info/
+*.log
+.smoke_*
+
+# Archivos del editor y del sistema
+.idea/
+.vscode/
+Thumbs.db
+Desktop.ini
+.DS_Store

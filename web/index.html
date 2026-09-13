@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#0b1210">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="App Gastos">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/app.css">
+  <title>App Gastos</title>
+</head>
+<body>
+  <div id="pairScreen" class="pair-screen hidden">
+    <div class="pair-card">
+      <div class="brand-mark"><span data-icon="wallet"></span></div>
+      <p class="eyebrow">APP GASTOS</p>
+      <h1>Tu plata, también en el teléfono.</h1>
+      <p class="muted">Ingresá el código de 6 dígitos que aparece en <b>Móvil</b> dentro de la aplicación de Windows.</p>
+      <input id="pairCode" class="pair-input" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code">
+      <button id="pairButton" class="primary full">Vincular teléfono</button>
+      <p id="pairError" class="error"></p>
+    </div>
+  </div>
+
+  <div id="app" class="app hidden">
+    <header class="topbar">
+      <button id="backButton" class="round-button hidden" aria-label="Volver"></button>
+      <div class="top-title">
+        <p id="topEyebrow" class="eyebrow">SALDO DISPONIBLE</p>
+        <h1 id="topTitle">$ 0</h1>
+      </div>
+      <button id="syncButton" class="round-button" aria-label="Actualizar"></button>
+    </header>
+
+    <main>
+      <section id="homeView" class="view active">
+        <div class="period-switch">
+          <button id="prevMonth" class="period-arrow"></button>
+          <div><strong id="periodLabel">—</strong><span>Resumen mensual</span></div>
+          <button id="nextMonth" class="period-arrow"></button>
+        </div>
+        <div class="hero-summary">
+          <div><span>Ingresos</span><strong class="positive" id="income">$ 0</strong></div>
+          <i></i>
+          <div><span>Gastos</span><strong class="negative" id="expense">$ 0</strong></div>
+          <i></i>
+          <div><span>Resultado</span><strong id="net">$ 0</strong></div>
+        </div>
+
+        <section class="section-block" id="installmentHomeBlock">
+          <div class="section-head"><div><span class="kicker">PLANIFICACIÓN</span><h2>Cuotas</h2></div><button data-open="installments">Ver todo</button></div>
+          <div id="homeInstallments" class="glass-card"></div>
+        </section>
+
+        <section class="section-block">
+          <div class="section-head"><div><span class="kicker">ESTE MES</span><h2>Gastos por categoría</h2></div><button data-open="analysis">Analizar</button></div>
+          <div id="categoryBars" class="glass-card category-bars"></div>
+        </section>
+
+        <section class="section-block">
+          <div class="section-head"><div><span class="kicker">ACTIVIDAD</span><h2>Últimos movimientos</h2></div><button data-open="transactions">Ver todo</button></div>
+          <div id="recentList" class="glass-card tx-list"></div>
+        </section>
+      </section>
+
+      <section id="transactionsView" class="view">
+        <div class="page-intro"><div><span class="kicker">HISTORIAL</span><h2>Movimientos</h2></div><span id="txCount" class="pill"></span></div>
+        <div id="txRangeBanner" class="range-banner hidden"><span id="txRangeLabel"></span><button id="clearTxRange">×</button></div>
+        <div class="filter-bar">
+          <div class="search-wrap"><span id="searchIcon"></span><input id="txSearch" placeholder="Buscar movimientos"></div>
+          <select id="txKind"><option value="all">Todos</option><option value="expense">Gastos</option><option value="income">Ingresos</option><option value="transfer">Transferencias</option></select>
+        </div>
+        <div class="period-switch compact">
+          <button id="txPrevMonth" class="period-arrow"></button><div><strong id="txPeriodLabel">—</strong><span>Período contable</span></div><button id="txNextMonth" class="period-arrow"></button>
+        </div>
+        <div id="allTransactions" class="glass-card tx-list"></div>
+        <div id="historyTransactions" class="history-block hidden"></div>
+      </section>
+
+      <section id="analysisView" class="view">
+        <div class="page-intro"><div><span class="kicker">TENDENCIAS</span><h2>Análisis</h2></div></div>
+        <div id="analysisKind" class="segmented small"><button class="active" data-value="expense">Gastos</button><button data-value="income">Ingresos</button></div>
+        <div id="analysisMode" class="chips"><button data-value="day">Día</button><button data-value="week">Semana</button><button class="active" data-value="month">Mes</button><button data-value="year">Año</button><button data-value="period">Período</button></div>
+        <div class="period-switch">
+          <button id="analysisPrev" class="period-arrow"></button><div><strong id="analysisPeriodLabel">—</strong><span id="analysisPeriodHint">Resumen</span></div><button id="analysisNext" class="period-arrow"></button>
+        </div>
+        <div id="periodInputs" class="period-inputs hidden"><input id="analysisFrom" type="date"><span>hasta</span><input id="analysisTo" type="date"><button id="applyPeriod" class="soft-button">Aplicar</button></div>
+        <div id="analysisSummary" class="hero-summary"></div>
+        <div class="analysis-card glass-card">
+          <div id="analysisDonut" class="donut"><div><strong id="analysisTotal">$0</strong><span>Total</span></div></div>
+          <div id="analysisCategories" class="analysis-list"></div>
+        </div>
+      </section>
+
+      <section id="moreView" class="view">
+        <div class="page-intro"><div><span class="kicker">TODO EN UN LUGAR</span><h2>Más</h2></div></div>
+        <div class="more-grid">
+          <button class="more-tile" data-open="accounts"><span data-icon="wallet"></span><div><b>Cuentas</b><small>Saldos y tarjetas</small></div></button>
+          <button class="more-tile" data-open="installments"><span data-icon="installments"></span><div><b>Cuotas</b><small>Compromisos mensuales</small></div></button>
+          <button class="more-tile" data-open="flex"><span data-icon="package"></span><div><b>Flex</b><small>Envíos de la semana</small></div></button>
+          <button class="more-tile" data-open="review"><span data-icon="inbox"></span><div><b>Por revisar</b><small id="reviewTileText">Importaciones pendientes</small></div><em id="pendingBadge" class="badge hidden">0</em></button>
+          <button class="more-tile" data-open="categories"><span data-icon="categories"></span><div><b>Categorías</b><small>Ordená tus gastos</small></div></button>
+          <button class="more-tile" data-open="calendar"><span data-icon="calendar"></span><div><b>Calendario</b><small>Movimientos por día</small></div></button>
+        </div>
+        <div class="more-info glass-card">
+          <span data-icon="sync"></span><div><b>Sincronizado con tu PC</b><small>Todo lo que hagas acá usa la misma base de App Gastos Desktop.</small></div>
+        </div>
+      </section>
+
+      <section id="accountsView" class="view child-view">
+        <div class="page-intro"><div><span class="kicker">PATRIMONIO</span><h2>Cuentas</h2></div><button id="newAccount" class="soft-button">+ Cuenta</button></div>
+        <div id="accountsStats" class="hero-summary"></div><div id="accountsList" class="accounts-list"></div>
+      </section>
+
+      <section id="installmentsView" class="view child-view">
+        <div class="page-intro"><div><span class="kicker">PLANIFICACIÓN</span><h2>Cuotas</h2></div><select id="installmentFilter"><option value="1">Activas</option><option value="0">Todas</option></select></div>
+        <div id="installmentStats" class="hero-summary"></div>
+        <div class="section-head"><div><span class="kicker">PRÓXIMOS MESES</span><h2>Compromiso mensual</h2></div></div>
+        <div id="commitmentStrip" class="month-strip"></div>
+        <div class="section-head"><div><span class="kicker">PLANES</span><h2>Compras en cuotas</h2></div></div>
+        <div id="installmentPlans" class="stack-list"></div>
+      </section>
+
+      <section id="flexView" class="view child-view">
+        <div class="page-intro"><div><span class="kicker">MERCADO LIBRE</span><h2>Envíos Flex</h2></div><button id="flexRates" class="soft-button">Tarifas</button></div>
+        <div class="period-switch"><button id="flexPrev" class="period-arrow"></button><div><strong id="flexWeekLabel">—</strong><span>Semana de trabajo</span></div><button id="flexNext" class="period-arrow"></button></div>
+        <div id="flexSummary" class="hero-summary"></div><button id="flexIncomeButton" class="soft-button full" style="margin-top:10px">Registrar semana como ingreso</button><div id="flexZones" class="flex-grid"></div>
+        <div class="section-head"><div><span class="kicker">HISTORIAL</span><h2>Semanas anteriores</h2></div></div><div id="flexHistory" class="glass-card compact-list"></div>
+      </section>
+
+      <section id="reviewView" class="view child-view">
+        <div class="page-intro"><div><span class="kicker">AUTOMATIZACIÓN</span><h2>Por revisar</h2></div><button id="scanButton" class="soft-button">Escanear</button></div>
+        <div id="reviewStats" class="hero-summary"></div>
+        <div class="review-actions"><select id="reviewSource"><option value="">Todo</option><option value="mercado_pago">Mercado Pago</option><option value="statement_scan">Resúmenes</option><option value="receipt_scan">Tickets</option></select><button id="acceptReady" class="primary">Agregar sugeridos</button><button id="clearReview" class="ghost-danger">Limpiar</button></div>
+        <div id="reviewList" class="stack-list"></div>
+      </section>
+
+      <section id="categoriesView" class="view child-view">
+        <div class="page-intro"><div><span class="kicker">ORGANIZACIÓN</span><h2>Categorías</h2></div><button id="newCategory" class="soft-button">+ Categoría</button></div>
+        <div id="categoryKindTabs" class="segmented small"><button class="active" data-value="expense">Gastos</button><button data-value="income">Ingresos</button></div>
+        <div id="categoryGroups" class="category-groups"></div>
+      </section>
+
+      <section id="calendarView" class="view child-view">
+        <div class="page-intro"><div><span class="kicker">CALENDARIO</span><h2>Actividad diaria</h2></div></div>
+        <div class="period-switch"><button id="calPrev" class="period-arrow"></button><div><strong id="calLabel">—</strong><span>Ingresos y gastos por día</span></div><button id="calNext" class="period-arrow"></button></div>
+        <div class="weekdays"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div><div id="calendarGrid" class="calendar-grid"></div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-view="home"><span data-icon="home"></span>Inicio</button>
+      <button class="nav-item" data-view="transactions"><span data-icon="transactions"></span>Movimientos</button>
+      <button id="fab" class="nav-add"><span>+</span></button>
+      <button class="nav-item" data-view="analysis"><span data-icon="chart"></span>Análisis</button>
+      <button class="nav-item" data-view="more"><span data-icon="more"></span>Más</button>
+    </nav>
+  </div>
+
+  <div id="addSheet" class="sheet-backdrop hidden">
+    <div class="sheet">
+      <div class="sheet-handle"></div><div class="sheet-head"><div><span class="kicker">MOVIMIENTO</span><h2 id="movementSheetTitle">Nuevo movimiento</h2></div><button id="closeSheet" class="close"></button></div>
+      <div id="movementKind" class="segmented"><button class="active" data-kind="expense">Gasto</button><button data-kind="income">Ingreso</button><button data-kind="transfer">Transferencia</button></div>
+      <label class="amount-field"><span>$</span><input id="amountInput" inputmode="decimal" placeholder="0"></label>
+      <label id="categoryField" class="field"><span>Categoría</span><button id="categoryButton" class="select-button">Elegir categoría <b>›</b></button></label>
+      <label class="field"><span>Cuenta</span><select id="accountSelect"></select></label>
+      <label id="toAccountField" class="field hidden"><span>Cuenta destino</span><select id="toAccountSelect"></select></label>
+      <label class="field"><span>Descripción</span><input id="descriptionInput" placeholder="Opcional"></label>
+      <div class="field-row"><label class="field grow"><span>Fecha</span><input id="dateInput" type="date"></label><button id="todayButton" class="today-btn">Hoy</button></div>
+      <label id="installmentsField" class="field hidden"><span>Cuotas</span><input id="installmentsInput" type="number" min="1" max="48" value="1"></label>
+      <details class="advanced"><summary>Más detalles</summary><label class="field"><span>Nota</span><input id="noteInput" placeholder="Opcional"></label><label class="field"><span>Etiquetas</span><input id="tagsInput" placeholder="trabajo, viaje…"></label></details>
+      <button id="saveTransaction" class="primary full">Guardar movimiento</button><p id="saveError" class="error"></p>
+    </div>
+  </div>
+
+  <div id="categorySheet" class="sheet-backdrop hidden"><div class="sheet category-sheet"><div class="sheet-handle"></div><div class="sheet-head"><h2>Elegir categoría</h2><button id="closeCategories" class="close"></button></div><input id="categorySearch" class="search" placeholder="Buscar categoría…"><div id="categoryGrid" class="category-grid"></div></div></div>
+  <div id="detailSheet" class="sheet-backdrop hidden"><div class="sheet detail-sheet"><div class="sheet-handle"></div><div class="sheet-head"><h2 id="detailTitle">Detalle</h2><button id="closeDetail" class="close"></button></div><div id="detailBody"></div></div></div>
+  <input id="scanFile" type="file" accept="image/*,.pdf" capture="environment" class="hidden">
+  <div id="toast" class="toast hidden"></div>
+  <script src="/app.js"></script>
+</body>
+</html>

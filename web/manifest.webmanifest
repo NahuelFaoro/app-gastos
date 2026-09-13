@@ -1,0 +1,11 @@
+{
+  "name": "App Gastos",
+  "short_name": "Gastos",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#080e0c",
+  "theme_color": "#72e0bd",
+  "description": "Tus finanzas personales sincronizadas con App Gastos Desktop"
+}

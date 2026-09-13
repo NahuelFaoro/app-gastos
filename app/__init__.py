@@ -1,0 +1,7 @@
+"""Paquete principal de App Gastos."""
+
+from .constants import APP_VERSION
+
+__version__ = APP_VERSION
+
+__all__ = ["APP_VERSION", "__version__"]

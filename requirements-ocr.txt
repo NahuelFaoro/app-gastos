@@ -1,0 +1,4 @@
+# Motor OCR de App Gastos. start.bat lo instala junto con las dependencias base.
+rapidocr>=3.8,<4
+onnxruntime>=1.22,<2
+PyMuPDF>=1.26,<2
