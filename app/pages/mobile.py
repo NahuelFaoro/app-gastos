@@ -92,7 +92,7 @@ class MobileSyncPage(QWidget):
         note = QLabel(
             "La PWA ya cubre las funciones principales de uso diario y trabaja contra la misma base que Desktop. "
             "Por ahora la sincronización es local: la PC debe estar encendida y ambos dispositivos en la misma red. "
-            "Para sincronizar desde datos móviles o fuera de casa sólo falta desplegar esta misma API detrás de HTTPS en un servidor."
+            "Usá una red de confianza. El acceso desde fuera de casa todavía no está disponible."
         )
         note.setObjectName("SmallMuted"); note.setWordWrap(True); ol.addWidget(note)
         root.addWidget(options)

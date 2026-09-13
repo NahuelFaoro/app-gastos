@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import json
 import mimetypes
+import math
 import secrets
 import socket
 import tempfile
@@ -15,6 +16,8 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from .scanner import scan_document
+from .constants import APP_VERSION
+from .mobile_security import PairingLimiter, RequestError
 from .work_calendar import week_end, week_start
 
 
@@ -121,7 +124,16 @@ def _period_from_query(qs: dict) -> tuple[date, date, str]:
 
 
 class _Handler(BaseHTTPRequestHandler):
-    server_version = "AppGastosMobile/0.24"
+    server_version = f"AppGastosMobile/{APP_VERSION}"
+
+    def setup(self):
+        self.request.settimeout(15)
+        super().setup()
+
+    def end_headers(self):
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "DENY")
+        super().end_headers()
 
     def log_message(self, fmt, *args):
         return
@@ -143,18 +155,58 @@ class _Handler(BaseHTTPRequestHandler):
         self.end_headers(); self.wfile.write(data)
 
     def _read_json(self, max_bytes=20_000_000):
-        try: length = int(self.headers.get("Content-Length", "0"))
-        except Exception: length = 0
-        if length <= 0: return {}
-        if length > max_bytes: raise ValueError("El archivo o solicitud es demasiado grande.")
+        if self.headers.get("Transfer-Encoding"):
+            raise RequestError("Codificación de transferencia no soportada.")
+        lengths = self.headers.get_all("Content-Length", [])
+        if len(lengths) != 1:
+            raise RequestError("La solicitud debe indicar su tamaño.")
+        try:
+            length = int(lengths[0])
+        except ValueError as exc:
+            raise RequestError("Tamaño de solicitud inválido.") from exc
+        if length <= 0:
+            raise RequestError("La solicitud no contiene datos.")
+        if length > max_bytes:
+            raise RequestError("El archivo o solicitud es demasiado grande.", 413)
+        if self.headers.get_content_type() != "application/json":
+            raise RequestError("Se requiere contenido JSON.", 415)
         raw = self.rfile.read(length)
-        try: return json.loads(raw.decode("utf-8"))
-        except Exception: return {}
+        try:
+            if len(raw) != length:
+                raise ValueError("Solicitud incompleta")
+            body = json.loads(raw.decode("utf-8"), parse_constant=self._invalid_constant,
+                              parse_float=self._finite_float)
+            if not isinstance(body, dict):
+                raise ValueError("Se requiere un objeto")
+            return body
+        except (ValueError, UnicodeError) as exc:
+            raise RequestError("El contenido JSON no es válido.") from exc
+
+    @staticmethod
+    def _invalid_constant(value):
+        raise ValueError("Número JSON no válido.")
+
+    @staticmethod
+    def _finite_float(value):
+        number = float(value)
+        if not math.isfinite(number):
+            raise ValueError("Número JSON no finito.")
+        return number
+
+    def _read_body(self, max_bytes=20_000_000):
+        try:
+            return self._read_json(max_bytes)
+        except RequestError as exc:
+            self._send_json({"ok": False, "error": str(exc)}, exc.status)
+            return None
+        except TimeoutError:
+            self._send_json({"ok": False, "error": "La solicitud tardó demasiado."}, 408)
+            return None
 
     def _authorized(self) -> bool:
         token = self.headers.get("X-AppGastos-Token", "").strip()
         expected, _ = ensure_mobile_credentials(self.db)
-        return bool(token and secrets.compare_digest(token, expected))
+        return bool(token and token.isascii() and secrets.compare_digest(token, expected))
 
     def _need_auth(self):
         if self._authorized(): return False
@@ -183,7 +235,7 @@ class _Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urlparse(self.path); path = parsed.path; qs = parse_qs(parsed.query)
         if not path.startswith("/api/"): self._serve_static(path); return
-        if path == "/api/ping": self._send_json({"ok": True, "name": "App Gastos", "version": "0.24.0"}); return
+        if path == "/api/ping": self._send_json({"ok": True, "name": "App Gastos", "version": APP_VERSION}); return
         if self._need_auth(): return
         try:
             routes = {
@@ -204,15 +256,20 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urlparse(self.path); path = parsed.path
-        try: body = self._read_json()
-        except ValueError as exc: self._send_json({"ok": False, "error": str(exc)}, 413); return
         if path == "/api/pair":
+            if not self.app_server.pairing_limiter.allow():
+                self._send_json({"ok": False, "error": "Demasiados intentos. Esperá un minuto y volvé a intentar."}, 429)
+                return
+            body = self._read_body(1024)
+            if body is None: return
             _, code = ensure_mobile_credentials(self.db); supplied = str(body.get("code") or "").strip()
-            if supplied and secrets.compare_digest(supplied, code):
+            if supplied and supplied.isascii() and secrets.compare_digest(supplied, code):
                 token, _ = ensure_mobile_credentials(self.db); self._send_json({"ok": True, "token": token})
             else: self._send_json({"ok": False, "error": "Código incorrecto"}, HTTPStatus.FORBIDDEN)
             return
         if self._need_auth(): return
+        body = self._read_body()
+        if body is None: return
         try:
             routes = {
                 "/api/transactions": self._post_transaction, "/api/transactions/duplicate": self._post_duplicate,
@@ -232,9 +289,9 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         parsed = urlparse(self.path); path = parsed.path
-        try: body = self._read_json()
-        except ValueError as exc: self._send_json({"ok": False, "error": str(exc)}, 413); return
         if self._need_auth(): return
+        body = self._read_body()
+        if body is None: return
         try:
             if path == "/api/transactions": self._put_transaction(body)
             elif path == "/api/accounts": self._put_account(body)
@@ -449,6 +506,7 @@ class _HTTPServer(ThreadingHTTPServer):
 
 class MobileServer:
     def __init__(self, db, port: int=8765, on_change=None):
+        self.pairing_limiter = PairingLimiter()
         self.db=db; self.port=int(port); self.on_change=on_change; self.web_root=Path(__file__).resolve().parent.parent/"web"; self._httpd=None; self._thread=None
     @property
     def running(self): return bool(self._thread and self._thread.is_alive() and self._httpd)

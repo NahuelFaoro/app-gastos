@@ -1,3 +1,13 @@
+# v0.39.19 — Importes y acceso móvil
+
+- Normalización decimal a centavos (ROUND_HALF_UP) al crear/editar movimientos; rechazo de NaN, infinitos e importes inválidos.
+- Cuotas con cálculo decimal compartido entre generación y proyección; los planes nuevos se rechazan si producirían cuotas no positivas.
+- Conservación de importes históricos y bases de cuotas existentes, sin migración de esquema.
+- Límite global de cinco intentos de vinculación por minuto, seguro frente a solicitudes concurrentes.
+- Autenticación previa a la lectura de cuerpos protegidos, JSON estricto, límite de 1 KB para vinculación y timeout de lectura.
+- Cabeceras contra interpretación incorrecta de contenido y embebido en marcos; versión móvil tomada de APP_VERSION.
+- Documentación actualizada y alcance pendiente de precisión monetaria y acceso remoto documentado.
+
 # v0.39.18 — Hub de Herramientas compacto en monitores anchos
 
 - Herramientas deja de repartir Flex y Viajes sobre todo el ancho del viewport: ambos accesos viven en un bloque central acotado.

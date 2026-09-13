@@ -1,4 +1,4 @@
-# Arquitectura — App Gastos v0.39.17
+# Arquitectura — App Gastos v0.39.19
 
 Las reglas permanentes de calidad están en `docs/ENGINEERING_GUIDELINES.md` y el contrato visual en `docs/RESPONSIVE_UI.md`.
 
@@ -85,3 +85,11 @@ La base vive en `%APPDATA%\AppGastos\app_gastos.db`, fuera de la carpeta de la v
 ## Calidad automática
 
 `scripts/audit_architecture.py` complementa tests funcionales y detecta patrones que históricamente generaron regresiones: SQL en páginas, reglas semanales duplicadas, QSS redefinido, imports relativos que apuntan fuera o a módulos inexistentes y crecimiento accidental de capas críticas.
+
+## Importes y acceso móvil (v0.39.19)
+
+`app/amounts.py` centraliza normalización decimal ROUND_HALF_UP a dos decimales y cálculo de última cuota. Los repositorios de movimientos/cuotas convierten a float sólo para conservar la API y el esquema existente. No se reescriben valores históricos al inicializar la base; otras áreas aún usan REAL/float.
+
+`app/mobile_security.py` mantiene un límite global en memoria, protegido por lock, de cinco intentos de vinculación cada 60 segundos. Las solicitudes protegidas se autentican antes de leer su cuerpo. POST/PUT requieren un objeto JSON válido, Content-Length y Content-Type application/json. La vinculación acepta como máximo 1024 bytes; las demás solicitudes mantienen el límite de 20 MB. Cada socket tiene timeout de 15 segundos.
+
+El token móvil y el código siguen en los ajustes de SQLite, a diferencia del token de Mercado Pago almacenado en keyring. El servidor sigue siendo HTTP local; estas defensas no lo convierten en un backend público. Ver `docs/TECHNICAL_REVIEW.md`.

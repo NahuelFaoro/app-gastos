@@ -1,4 +1,4 @@
-# Mapa rápido del proyecto — v0.39.17
+# Mapa rápido del proyecto — v0.39.19
 
 ## Quiero cambiar…
 
@@ -29,6 +29,8 @@
 | Herramienta por zonas (Flex) | `app/pages/flex.py` + `app/repositories/flex.py` |
 | Esquema SQLite / coordinación de migraciones | `app/schema.py` + `app/db.py` |
 | Mercado Pago | `app/mercadopago.py` |
+| Normalización de importes y cuotas | `app/amounts.py` |
+| Validación HTTP y límite de vinculación | `app/mobile_server.py` + `app/mobile_security.py` |
 | Versión | `app/constants.py` (`APP_VERSION`) |
 | Auditor de arquitectura | `scripts/audit_architecture.py` |
 | Smoke test gráfico | `scripts/check_app.py` |

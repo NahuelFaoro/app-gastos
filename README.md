@@ -1,4 +1,4 @@
-# App Gastos v0.39.18
+# App Gastos v0.39.19
 
 Aplicación de finanzas personales con herramientas de trabajo integradas.
 
@@ -8,12 +8,13 @@ Abrí **`start.bat`**. La primera ejecución crea/actualiza `.venv`, instala las
 
 La base principal se guarda en `%APPDATA%\AppGastos\app_gastos.db`, fuera de la carpeta del programa. Cambiar de versión no elimina tus datos.
 
-## Qué cambia en v0.39.18
+## Qué cambia en v0.39.19
 
-- Corrige la distribución del inicio de **Herramientas** en monitores anchos: Flex y Viajes quedan juntos dentro de un bloque central, sin el vacío exagerado entre ambos.
-- Las tarjetas aprovechan el ancho de su columna hasta un máximo controlado y siguen apilándose en ventanas compactas/verticales.
-- El texto informativo inferior comparte el mismo ancho y alineación del bloque principal.
-- Mantiene las correcciones de estabilidad, categorías sin salto de scroll, OCR integrado y smoke determinista de versiones anteriores.
+- Movimientos nuevos y editados normalizan importes a centavos con redondeo decimal; rechazan valores no finitos.
+- Las cuotas usan cálculo decimal y la última absorbe la diferencia en centavos.
+- Vinculación móvil limitada a cinco intentos por minuto para todo el servidor; solicitudes JSON y tamaños se validan antes de procesar datos.
+- La API informa la versión real de la aplicación. El acceso móvil continúa limitado al uso en una red local de confianza.
+- Conserva el esquema SQLite y los valores históricos existentes. Alcance y próximos pasos en `docs/TECHNICAL_REVIEW.md`.
 
 ## Base v0.39
 
@@ -58,7 +59,7 @@ En Windows ejecutá:
 
 `scripts\windows\build_share.bat`
 
-Genera `dist\AppGastos_v0.39.18_LITE.zip`. Excluye el motor OCR local (RapidOCR/ONNX/PyMuPDF), que era la principal causa del tamaño de las builds anteriores.
+Genera `dist\AppGastos_v0.39.19_LITE.zip`. Excluye el motor OCR local (RapidOCR/ONNX/PyMuPDF), que era la principal causa del tamaño de las builds anteriores.
 
 La build completa con OCR sigue disponible mediante `scripts\windows\build_windows_full.bat`.
 

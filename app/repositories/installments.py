@@ -4,6 +4,7 @@ from calendar import monthrange
 from datetime import date
 
 from ..utils import add_months
+from ..amounts import decimal_amount, installment_amount
 
 
 class InstallmentsMixin:
@@ -101,7 +102,7 @@ class InstallmentsMixin:
                 key = (due.year, due.month)
                 if key not in buckets:
                     continue
-                amount = base if n < total else max(0.0, total_amount - base * (total - 1))
+                amount = installment_amount(total_amount, base, total, n)
                 item = {
                     "plan_id": int(plan["id"]),
                     "description": plan.get("description") or plan.get("category_name") or "Compra en cuotas",
@@ -118,7 +119,7 @@ class InstallmentsMixin:
                     "active": bool(plan.get("active")),
                 }
                 buckets[key]["items"].append(item)
-                buckets[key]["total"] += amount
+                buckets[key]["total"] = float(decimal_amount(buckets[key]["total"]) + decimal_amount(amount))
                 buckets[key]["count"] += 1
 
         result = []
@@ -159,9 +160,7 @@ class InstallmentsMixin:
                 number = int(p["next_number"])
                 total = int(p["installments"])
                 while next_date <= through and number <= total and generated < max_generated:
-                    amount = float(p["base_amount"])
-                    if number == total:
-                        amount = round(float(p["total_amount"]) - float(p["base_amount"]) * (total - 1), 2)
+                    amount = installment_amount(p["total_amount"], p["base_amount"], total, number)
                     con.execute(
                         """
                         INSERT INTO transactions(kind,amount,account_id,category_id,tx_date,description,note,tags,source,
@@ -285,7 +284,7 @@ class InstallmentsMixin:
                     WHERE id=?
                     """,
                     (
-                        int(card_account_id), tx.get("category_id"), round(amount * total, 2), total, amount,
+                        int(card_account_id), tx.get("category_id"), float(decimal_amount(amount) * total), total, amount,
                         purchase_date.isoformat(), next_date.isoformat(), current + 1,
                         tx.get("description", ""), tx.get("note", ""), tx.get("tags", ""), active, int(plan_id),
                     ),
@@ -302,7 +301,7 @@ class InstallmentsMixin:
                     VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
                     """,
                     (
-                        int(card_account_id), tx.get("category_id"), round(amount * total, 2), total, amount,
+                        int(card_account_id), tx.get("category_id"), float(decimal_amount(amount) * total), total, amount,
                         purchase_date.isoformat(), next_date.isoformat(), current + 1,
                         tx.get("description", ""), tx.get("note", ""), tx.get("tags", ""), active,
                     ),

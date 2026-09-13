@@ -4,6 +4,7 @@ from datetime import date
 from typing import Any
 
 from ..utils import add_months, month_bounds
+from ..amounts import decimal_amount, installment_amount
 
 
 class TransactionsMixin:
@@ -20,7 +21,7 @@ class TransactionsMixin:
     def _validate_tx(self, data: dict[str, Any]):
         if data.get("kind") not in {"expense", "income", "transfer"}:
             raise ValueError("Tipo de movimiento inválido.")
-        if float(data.get("amount") or 0) <= 0:
+        if decimal_amount(data.get("amount") or 0) <= 0:
             raise ValueError("El importe debe ser mayor a cero.")
         if not data.get("account_id"):
             raise ValueError("Seleccioná una cuenta.")
@@ -34,6 +35,7 @@ class TransactionsMixin:
             raise ValueError("Seleccioná una categoría.")
 
     def add_transaction(self, data: dict[str, Any], recurring_id: int | None = None, source: str = "manual", external_id: str | None = None):
+        data = {**data, "amount": float(decimal_amount(data.get("amount") or 0))}
         self._validate_tx(data)
         installments = int(data.get("installments") or 1)
         account = self.account(int(data["account_id"]))
@@ -45,8 +47,8 @@ class TransactionsMixin:
             if use_installments:
                 purchase_date = date.fromisoformat(self._normalize_tx_date(data["tx_date"]))
                 total_amount = float(data["amount"])
-                base_amount = round(total_amount / installments, 2)
-                if base_amount <= 0:
+                base_amount = float(decimal_amount(decimal_amount(total_amount) / installments))
+                if base_amount <= 0 or installment_amount(total_amount, base_amount, installments, installments) <= 0:
                     raise ValueError("El importe de la cuota no es válido.")
                 next_date = add_months(purchase_date, 1, purchase_date.day)
                 plan_cur = con.execute(
@@ -85,6 +87,7 @@ class TransactionsMixin:
             return int(cur.lastrowid)
 
     def update_transaction(self, tx_id: int, data: dict[str, Any]):
+        data = {**data, "amount": float(decimal_amount(data.get("amount") or 0))}
         self._validate_tx(data)
         with self.connect() as con:
             con.execute(
