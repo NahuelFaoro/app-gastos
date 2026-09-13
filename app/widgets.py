@@ -201,9 +201,9 @@ class MoneyEdit(QLineEdit):
 
 
 class IconBadge(QWidget):
-    """Badge circular con soporte opcional para dos colores.
+    """Badge de contorno con soporte opcional para dos colores.
 
-    ``secondary_color`` divide visualmente el círculo en dos mitades. Se usa
+    ``secondary_color`` agrega un acento lateral. Se usa
     para categorías jerárquicas como ``Moto / GLH`` sin cambiar el ícono.
     """
     def __init__(self, icon="other", color="#4CCFA9", size=42, parent=None, secondary_color=None):
@@ -235,41 +235,28 @@ class IconBadge(QWidget):
             if color.saturation() < 40:
                 color = color.lighter(108)
 
-            shadow = QRectF(rect.left(), rect.top() + 2, rect.width(), rect.height())
-            shade = QColor(color)
-            shade.setAlpha(48)
-            p.setPen(Qt.PenStyle.NoPen)
-            p.setBrush(shade)
-            p.drawEllipse(shadow)
-
+            # Superficie tenue, sin sombras ni anillos brillantes.
             fill = QColor(color)
-            edge = QColor("#FFFFFF")
-            edge.setAlpha(30)
+            fill.setAlpha(24)
+            edge = QColor(color)
+            edge.setAlpha(55)
+            radius = self.badge_size * 0.27
             p.setPen(QPen(edge, 1))
             p.setBrush(fill)
-            p.drawEllipse(rect)
+            p.drawRoundedRect(rect, radius, radius)
             if self.secondary_color and self.secondary_color.isValid():
-                # Segunda mitad del círculo, recortada por el propio óvalo.
-                p.save()
-                from PySide6.QtGui import QPainterPath
-                clip = QPainterPath(); clip.addEllipse(rect)
-                p.setClipPath(clip)
-                p.setPen(Qt.PenStyle.NoPen)
-                p.setBrush(self.secondary_color)
-                p.drawRect(QRectF(rect.center().x(), rect.top(), rect.width() / 2, rect.height()))
-                p.restore()
-                p.setPen(QPen(edge, 1)); p.setBrush(Qt.BrushStyle.NoBrush); p.drawEllipse(rect)
-
-            ring = QRectF(rect.left() + 1.5, rect.top() + 1.5, rect.width() - 3, rect.height() - 3)
-            hi = QColor("#FFFFFF")
-            hi.setAlpha(26)
-            p.setPen(QPen(hi, 1))
-            p.setBrush(Qt.BrushStyle.NoBrush)
-            p.drawEllipse(ring)
-
-            fg = self._icon_foreground(color)
-            icon_margin = max(8.0, self.badge_size * 0.23)
-            draw_icon(p, rect.adjusted(icon_margin, icon_margin, -icon_margin, -icon_margin), self.icon, fg, 1.95)
+                # Acento lateral conserva el segundo color sin dividir el símbolo.
+                p.setPen(QPen(self.secondary_color, 2.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+                p.drawLine(QPointF(rect.right() - 3, rect.top() + radius),
+                           QPointF(rect.right() - 3, rect.bottom() - radius))
+            foreground = QColor(color)
+            background = self.palette().color(QPalette.ColorRole.Window)
+            if background.lightness() < 128 and foreground.lightness() < 110:
+                foreground = foreground.lighter(180)
+            elif background.lightness() >= 128 and foreground.lightness() > 145:
+                foreground = foreground.darker(170)
+            icon_margin = max(5.0, self.badge_size * 0.18)
+            draw_icon(p, rect.adjusted(icon_margin, icon_margin, -icon_margin, -icon_margin), self.icon, foreground, 1.7)
         finally:
             p.end()
 

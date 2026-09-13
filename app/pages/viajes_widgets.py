@@ -98,10 +98,10 @@ class WorkMetricCard(QFrame):
         days = int(summary.get("completed_days") or 0)
         self.set_value(
             f"{total:.1f} km" if days else "—",
-            secondary=f"Promedio: {total / days:.1f} km/día" if days else "Promedio: —",
-            hint=f"{days} día{'s' if days != 1 else ''} con registro" if days else "Sin días completos",
+            hint=f"Prom. {total / days:.1f} km/día" if days else "Promedio: —",
         )
-        self.setToolTip("Promedio diario = KM reales / días con odómetro inicial y final. "
+        self.hint.setWordWrap(False)
+        self.setToolTip(f"{days} días con registro completo. Promedio diario = KM reales / días con odómetro inicial y final. "
                         "Los días sin registro completo no se incluyen; los días completos con 0 km sí.")
 
     def set_value(self, value: str, secondary: str = "", hint: str = "") -> None:

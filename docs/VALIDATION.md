@@ -1,4 +1,10 @@
-# Validación v0.39.24
+# Validación v0.39.25
+
+## Revisión v0.39.25
+
+- Tarjeta KM verificada a 160 px y dentro de páginas reales semanal/mensual a 1280 y 760 px, con comprobación de ancho y ausencia de superposición.
+- Render de todas las claves del catálogo Remix incluido en qtawesome.
+- Capturas con datos temporales de categorías y ambas vistas de Viajes.
 
 ## Revisión v0.39.24
 
@@ -36,13 +42,13 @@
 
 ## Comprobaciones ejecutadas (2026-09-13)
 
-- `python -m scripts.validate_project`: auditoría de arquitectura, compilación y **92 pruebas automáticas OK**.
+- `python -m scripts.validate_project`: auditoría de arquitectura, compilación y **94 pruebas automáticas OK**.
 - `python -m scripts.check_app`: **APP_GASTOS_SMOKE_OK** usando PySide6 nativo y una base temporal.
 - Pruebas HTTP reales sobre loopback: vinculación, lectura y escritura autenticadas, límite de intentos, JSON/tamaños inválidos y rechazo previo a lectura sin autenticación.
 - Regresiones monetarias: redondeo a centavos, entradas no finitas, cuotas que suman el total, proyección consistente y rechazo atómico de planes inválidos.
 - Reapertura de base temporal: conserva valores históricos con más de dos decimales y cuota base existente. La versión 0.39.23 agregó data_migrations para registrar adaptaciones ejecutadas; esta entrega no cambia el esquema. Las pruebas usan bases temporales y no modifican la base personal. La reparación puntual de categorías de v0.39.22 quedó respaldada y no se repite automáticamente.
 
-`start.bat` obtiene APP_VERSION y ejecuta el smoke una vez por versión; para esta entrega usa `.smoke_v0.39.24`.
+`start.bat` obtiene APP_VERSION y ejecuta el smoke una vez por versión; para esta entrega usa `.smoke_v0.39.25`.
 
 El smoke verifica construcción, layouts y diálogos. No equivale a una revisión visual manual completa ni a una prueba del acceso desde un teléfono físico. No se verificaron llamadas reales a Mercado Pago ni OCR con comprobantes personales. Tampoco se generó un ejecutable de distribución.
 

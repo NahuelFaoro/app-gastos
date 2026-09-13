@@ -182,17 +182,48 @@ class RequestedUiRuntimeTests(unittest.TestCase):
         # El mes incluye otra semana; agosto no debe entrar.
         self.db.set_work_day_mileage("2026-09-14", 1100, 1200)
         self.db.set_work_day_mileage("2026-08-31", 900, 1000)
-        card = self.display(WorkMetricCard("KM reales", 170), 240, 112)
+        card = self.display(WorkMetricCard("KM reales", 160), 160, 112)
         for summary, average, count in (
             (self.db.work_week_mileage_summary("2026-09-07"), "33.3", 3),
             (self.db.work_month_summary(2026, 9), "50.0", 4),
         ):
             card.set_mileage(summary)
             self.app.processEvents()
-            self.assertEqual(card.secondary.text(), f"Promedio: {average} km/día")
-            self.assertEqual(card.hint.text(), f"{count} días con registro")
+            self.assertTrue(card.secondary.isHidden())
+            self.assertEqual(card.hint.text(), f"Prom. {average} km/día")
+            self.assertIn(f"{count} días con registro", card.toolTip())
+            self.assertLessEqual(card.hint.fontMetrics().horizontalAdvance(card.hint.text()), card.hint.width())
+            self.assertLess(card.value.geometry().bottom(), card.hint.geometry().top())
             self.assertLessEqual(card.hint.geometry().bottom(), card.height())
             self.capture(card, f"mileage-average-{count}")
         card.set_mileage(self.db.work_month_summary(2026, 10))
         self.assertEqual(card.value.text(), "—")
-        self.assertEqual(card.secondary.text(), "Promedio: —")
+        self.assertEqual(card.hint.text(), "Promedio: —")
+
+    def test_mileage_in_real_weekly_and_monthly_layouts(self):
+        from datetime import date
+        from app.pages.viajes import ViajesPage
+        from app.pages.work_monthly import WorkMonthSummaryDialog
+        self.db.set_work_day_mileage("2026-09-07", 1000, 1300)
+        week = ViajesPage(self.db)
+        week.current_week = date(2026, 9, 7)
+        week.refresh()
+        month = WorkMonthSummaryDialog(self.db, date(2026, 9, 7))
+        for page, card, name in ((week, week.stat_km, "week"), (month, month.metrics["real_km"], "month")):
+            for width in (1280, 760):
+                self.display(page, width, 850)
+                self.assertTrue(card.secondary.isHidden())
+                self.assertLess(card.value.geometry().bottom(), card.hint.geometry().top())
+                self.assertLessEqual(card.hint.fontMetrics().horizontalAdvance(card.hint.text()), card.hint.width())
+                self.assertLessEqual(card.hint.geometry().bottom(), card.height())
+                self.capture(page, f"mileage-layout-{name}-{width}")
+
+    def test_outline_icon_catalog_renders_without_fallback(self):
+        import qtawesome as qta
+        from app.icons import QTA_ICON_MAP
+        from app.icon_data import ICON_KEYS
+        self.assertEqual(set(QTA_ICON_MAP), set(ICON_KEYS))
+        for key, name in QTA_ICON_MAP.items():
+            with self.subTest(icon=key):
+                pixmap = qta.icon(name, color="#9988DD").pixmap(32, 32)
+                self.assertFalse(pixmap.isNull())

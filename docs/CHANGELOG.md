@@ -1,3 +1,10 @@
+# v0.39.25 — KM legible e iconos de contorno
+
+- Reduce KM a total y una línea de promedio con tipografía secundaria; ayuda contextual conserva días y fórmula. Evita el desborde a 160 px.
+- Reemplaza pictogramas sólidos por Remix Icon de contorno desde qtawesome, conservando claves persistidas y fallback vectorial.
+- Badges sin sombras/anillos: fondo tenue, esquinas redondeadas, símbolo de color y acento lateral para el segundo color.
+- Regresiones sobre el ancho real, páginas completas de semana/mes y catálogo de iconos.
+
 # v0.39.24 — Promedio diario de KM
 
 - Conserva las guías de categorías y elimina los cortes entre filas, manteniendo sangría y paneles desplegables.
