@@ -1,6 +1,13 @@
-# Validación v0.39.20
+# Validación v0.39.21
 
-## Revisión visual v0.39.20
+## Revisión v0.39.21
+
+- Paneles inline comprobados a 1500/768/430 px; varias ramas visibles sin reemplazar la pantalla.
+- Extracción con clic en ↑ mueve sólo un nivel y preserva IDs/movimientos; arrastre vuelve a anidar el elemento.
+- Búsqueda muestra los ancestros; limpiar el filtro conserva la expansión anterior.
+- Capturas `categories-inline-*.png` generadas con datos temporales en `dist/ui-review`.
+
+## Revisión visual anterior v0.39.20
 
 - Capturas Qt con datos genéricos verificadas en escritorio y ventana angosta; grilla probada a 1500, 768 y 430 px.
 - Análisis alterna 420 → 1500 → 800 → 420 → 1500 px y comprueba el centro del porcentaje y el borde derecho del importe.
@@ -18,7 +25,7 @@
 - Regresiones monetarias: redondeo a centavos, entradas no finitas, cuotas que suman el total, proyección consistente y rechazo atómico de planes inválidos.
 - Reapertura de base temporal: conserva valores históricos con más de dos decimales y cuota base existente. Esta entrega no cambia el esquema; no se abrió la base personal del usuario.
 
-`start.bat` obtiene APP_VERSION y ejecuta el smoke una vez por versión; para esta entrega usa `.smoke_v0.39.20`.
+`start.bat` obtiene APP_VERSION y ejecuta el smoke una vez por versión; para esta entrega usa `.smoke_v0.39.21`.
 
 El smoke verifica construcción, layouts y diálogos. No equivale a una revisión visual manual completa ni a una prueba del acceso desde un teléfono físico. No se verificaron llamadas reales a Mercado Pago ni OCR con comprobantes personales. Tampoco se generó un ejecutable de distribución.
 

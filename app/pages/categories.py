@@ -26,7 +26,7 @@ from PySide6.QtWidgets import (
 
 from ..dialogs import CategoryDialog
 from ..layouts import responsive_mode
-from .category_tiles import CategoryTile, CategoryDropButton
+from .category_tiles import CategoryPanel, CategoryDropButton
 from .common import page_header
 
 
@@ -39,7 +39,8 @@ class CategoriesPage(QWidget):
         self.current_kind = "expense"
         self._mode = None
         self._move_in_progress = False
-        self.current_parent = None
+        self._expanded_ids = set()
+        self._known_roots = set()
         self._tiles = []
         self._columns = 0
 
@@ -54,7 +55,7 @@ class CategoriesPage(QWidget):
         ))
         self.top_layout.addStretch()
         add = QPushButton("Nueva categoría")
-        add.clicked.connect(lambda: self.add_category(self.current_parent))
+        add.clicked.connect(lambda: self.add_category())
         self.top_layout.addWidget(add)
         root.addLayout(self.top_layout)
 
@@ -90,17 +91,12 @@ class CategoriesPage(QWidget):
         root.addWidget(toolbar)
 
         navigation = QHBoxLayout()
-        self.home_button = CategoryDropButton("Todas")
-        self.home_button.clicked.connect(lambda: self.open_folder(None))
+        self.home_button = CategoryDropButton("Soltar aquí para hacer principal")
         self.home_button.move_requested.connect(self.move_category)
-        self.back_button = CategoryDropButton("↑ Subir")
-        self.back_button.clicked.connect(self.go_up)
-        self.back_button.move_requested.connect(self.move_category)
-        self.path_label = QLabel()
+        self.path_label = QLabel("Desplegá varias categorías a la vez · ↑ saca una subcategoría un nivel")
         self.path_label.setObjectName("Muted")
         self.path_label.setWordWrap(True)
         navigation.addWidget(self.home_button)
-        navigation.addWidget(self.back_button)
         navigation.addWidget(self.path_label, 1)
         root.addLayout(navigation)
 
@@ -138,7 +134,8 @@ class CategoriesPage(QWidget):
 
     def set_kind(self, kind):
         self.current_kind = kind
-        self.current_parent = None
+        self._expanded_ids = set()
+        self._known_roots = set()
         self.expense_btn.setChecked(kind == "expense")
         self.income_btn.setChecked(kind == "income")
         self.refresh(preserve_scroll=False)
@@ -146,17 +143,20 @@ class CategoriesPage(QWidget):
     def _refresh_from_search(self) -> None:
         self.refresh(preserve_scroll=False)
 
-    def open_folder(self, category_id: int | None) -> None:
-        self.current_parent = category_id
-        self.search.blockSignals(True)
-        self.search.clear()
-        self.search.blockSignals(False)
-        self._search_timer.stop()
-        self.refresh(preserve_scroll=False)
+    def lift_category(self, category_id: int) -> None:
+        category = self.db.category(category_id)
+        if not category or category.get("parent_id") is None:
+            return
+        parent = self.db.category(int(category["parent_id"]))
+        self.move_category(category_id, int(parent.get("parent_id") or 0) if parent else 0)
 
-    def go_up(self) -> None:
-        category = self.db.category(self.current_parent) if self.current_parent else None
-        self.open_folder(category.get("parent_id") if category else None)
+    def _connect_row(self, row) -> None:
+        row.edit_requested.connect(self.edit_category)
+        row.add_child_requested.connect(self.add_subcategory)
+        row.delete_requested.connect(self.delete_category)
+        row.duplicate_requested.connect(self.duplicate_category)
+        row.lift_requested.connect(self.lift_category, Qt.ConnectionType.QueuedConnection)
+        row.move_requested.connect(self.move_category, Qt.ConnectionType.QueuedConnection)
 
     def eventFilter(self, watched, event):
         if watched is self.scroll.viewport() and event.type() == QEvent.Type.Resize:
@@ -169,18 +169,38 @@ class CategoriesPage(QWidget):
         available = max(1, self.scroll.viewport().width() - 8)
         # La celda sigue el tamaño tipográfico; el número de columnas depende
         # del viewport real, no del tamaño provisional de la página oculta.
-        cell_width = max(170, self.fontMetrics().horizontalAdvance("Categorías personales") + 32)
+        cell_width = max(350, self.fontMetrics().horizontalAdvance("Categorías personales") + 170)
         columns = max(1, available // (cell_width + 12))
+        if columns == self._columns:
+            return
+        for tile in self._tiles:
+            tile.setParent(None)
+        while self.groups_layout.count():
+            item = self.groups_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
         for column in range(max(self._columns, columns)):
             self.groups_layout.setColumnStretch(column, 1 if column < columns else 0)
-        for tile in self._tiles:
-            self.groups_layout.removeWidget(tile)
+        stacks = []
+        for column in range(columns):
+            host = QWidget()
+            stack = QVBoxLayout(host)
+            stack.setContentsMargins(0, 0, 0, 0)
+            stack.setSpacing(11)
+            stacks.append(stack)
+            self.groups_layout.addWidget(host, 0, column)
         for index, tile in enumerate(self._tiles):
-            self.groups_layout.addWidget(tile, index // columns, index % columns)
+            stacks[index % columns].addWidget(tile)
+            tile.show()
+        for stack in stacks:
+            stack.addStretch()
         self._columns = columns
 
     def _clear_groups_now(self) -> None:
         self._tiles = []
+        for column in range(self._columns):
+            self.groups_layout.setColumnStretch(column, 0)
+        self._columns = 0
         while self.groups_layout.count():
             item = self.groups_layout.takeAt(0)
             widget = item.widget()
@@ -197,36 +217,37 @@ class CategoriesPage(QWidget):
         by_parent = defaultdict(list)
         for row in rows:
             by_parent[row.get("parent_id")].append(row)
-        if self.current_parent not in by_id:
-            self.current_parent = None
-        current = by_id.get(self.current_parent)
-        self.path_label.setText(str(current.get("path") or current["name"]) if current else "Categorías principales")
-        self.back_button.setEnabled(current is not None)
-        self.back_button.target_id = int(current.get("parent_id") or 0) if current else 0
-        self.home_button.setToolTip("Volver al inicio · soltá aquí una categoría para llevarla al nivel principal")
-        self.back_button.setToolTip("Subir un nivel · soltá aquí una categoría para moverla al nivel superior")
+        roots = by_parent.get(None, [])
+        root_ids = {int(row["id"]) for row in roots}
+        self._expanded_ids.update(root_ids - self._known_roots)
+        self._known_roots = root_ids
         query = self.search.text().strip().casefold()
-        visible = ([row for row in rows if query in str(row.get("path") or row["name"]).casefold()]
-                   if query else by_parent.get(self.current_parent, []))
-        visible = sorted(visible, key=lambda row: (int(row.get("sort_order") or 0), row["name"].casefold()))
-        self.counter.setText(f"{len(visible)} visibles · {len(rows)} categorías")
+        visible_ids = None
+        if query:
+            visible_ids = set()
+            for row in rows:
+                if query not in str(row.get("path") or row["name"]).casefold():
+                    continue
+                current = row
+                while current:
+                    cid = int(current["id"])
+                    if cid in visible_ids:
+                        break
+                    visible_ids.add(cid)
+                    current = by_id.get(current.get("parent_id"))
+        self.counter.setText(f"{len(rows)} categorías")
         self.host.setUpdatesEnabled(False)
         try:
             self._clear_groups_now()
-            for category in visible:
-                tile = CategoryTile(category, by_parent.get(int(category["id"]), []))
-                tile.opened.connect(self.open_folder)
-                tile.edit_requested.connect(self.edit_category)
-                tile.add_child_requested.connect(self.add_subcategory)
-                tile.delete_requested.connect(self.delete_category)
-                tile.duplicate_requested.connect(self.duplicate_category)
-                # El drop termina antes de reconstruir y destruir su widget origen.
-                tile.move_requested.connect(self.move_category, Qt.ConnectionType.QueuedConnection)
-                self._tiles.append(tile)
+            for category in roots:
+                if visible_ids is not None and int(category["id"]) not in visible_ids:
+                    continue
+                panel = CategoryPanel(category, by_parent, self._expanded_ids, self._connect_row, visible_ids)
+                self._tiles.append(panel)
             if self._tiles:
                 self._arrange_tiles()
             else:
-                empty = QLabel("No hay resultados." if query else "Esta carpeta está vacía. Usá Nueva categoría para agregar una subcategoría.")
+                empty = QLabel("No hay resultados." if query else "Usá Nueva categoría para empezar.")
                 empty.setObjectName("Muted")
                 empty.setWordWrap(True)
                 empty.setAlignment(Qt.AlignmentFlag.AlignCenter)

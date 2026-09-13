@@ -1,4 +1,4 @@
-# Arquitectura — App Gastos v0.39.20
+# Arquitectura — App Gastos v0.39.21
 
 Las reglas permanentes de calidad están en `docs/ENGINEERING_GUIDELINES.md` y el contrato visual en `docs/RESPONSIVE_UI.md`.
 
@@ -78,7 +78,7 @@ Sólo existe kilometraje real por odómetro (`work_day_mileage`). Inicio/final s
 
 `categories.parent_id` es recursivo, sin profundidad artificial. Consultas centrales construyen rutas y descendientes; mover un nodo conserva sus IDs y movimientos. `secondary_color` permite iconos bicolor y `IconBadge` centraliza su representación.
 
-La gestión visual está en `app/pages/categories.py` y sus componentes en `app/pages/category_tiles.py`. Cada nivel muestra sólo sus hijos directos en una grilla ajustada al viewport; la búsqueda muestra coincidencias globales con su ruta. El cambio de carpeta no modifica datos. Los drops sobre otra carpeta o sobre Todas/Subir delegan a `Database.move_category`. El drop entre iconos se procesa mediante conexión encolada para finalizar el gesto antes de retirar los widgets anteriores.
+La gestión visual está en `app/pages/categories.py` y sus componentes en `app/pages/category_tiles.py`. Cada categoría principal ocupa un `CategoryPanel` con filas indentadas; varias ramas pueden desplegarse en el lugar sin navegación. Las columnas independientes evitan huecos por diferencias de altura. La búsqueda incluye ancestros y expande el contexto sin alterar el estado guardado de expansión. `CategoryPanel.apply_visibility` sólo alterna visibilidad: no reconstruye la página. El botón ↑ delega el movimiento al padre del contenedor actual; los drops delegan a `Database.move_category`. Movimientos y extracciones se encolan para finalizar el evento antes de retirar widgets.
 
 ## Datos y privacidad
 

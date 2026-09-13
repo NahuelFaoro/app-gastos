@@ -1,3 +1,11 @@
+# v0.39.21 — Jerarquías visibles y movimiento directo
+
+- Sustituye la navegación entre carpetas por paneles desplegables en la misma pantalla. Las categorías principales muestran inicialmente sus hijos directos.
+- Columnas independientes aprovechan espacios debajo de grupos cortos; la grilla pasa a una columna en ventanas angostas.
+- Botón ↑ por subcategoría para sacarla un nivel sin navegación. Mantiene drag/drop entre filas y destino global para hacer principal.
+- Búsqueda con ancestros visibles y preservación de expansión entre actualizaciones.
+- Prueba Qt de expansión simultánea, extracción con clic, arrastre y conservación de movimientos; capturas a 1500/768/430 px.
+
 # v0.39.20 — Carpetas de categorías y correcciones visuales
 
 - Reemplaza la lista jerárquica por una grilla responsive de carpetas e iconos, con vista previa de hijos, ruta y búsqueda global.
