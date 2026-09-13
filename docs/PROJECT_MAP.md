@@ -1,4 +1,4 @@
-# Mapa rápido del proyecto — v0.39.26
+# Mapa rápido del proyecto — v0.39.27
 
 ## Quiero cambiar…
 

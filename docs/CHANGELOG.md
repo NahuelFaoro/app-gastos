@@ -1,3 +1,10 @@
+# v0.39.27 — Color, variedad y personalización
+
+- Relleno de iconos ilustrados basado en el color elegido, suavizado conservando su matiz.
+- 19 claves nuevas de iconos; amplía el catálogo con Phosphor incluido en qtawesome. Cerebro específico para la visualización de Psicólogo con icono médico genérico.
+- Cuentas: alcancía, billete, billetera, tarjeta, banco e inversión según tipo; elimina la línea de color y amplía el dibujo.
+- Editor de campos y tarifas con etiquetas, grilla adaptable y acciones compactas. Conserva persistencia, orden y controles existentes.
+
 # v0.39.26 — Variante de iconos ilustrados
 
 - Añade una variante pastel con contornos oscuros, fondo claro y detalles expresivos para probar en categorías.

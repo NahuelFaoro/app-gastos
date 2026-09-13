@@ -5,13 +5,14 @@ from PySide6.QtGui import QColor, QPen
 PASTELS = ("#B7A2E8", "#FFADC1", "#83C6FA", "#FFD88A", "#7CDBBD")
 
 
-def draw_illustrated(p, rect, key, line_name, qta):
+def draw_illustrated(p, rect, key, line_name, qta, accent):
     p.save()
     size = min(rect.width(), rect.height())
     p.translate(rect.center().x() - size / 2, rect.center().y() - size / 2)
     p.scale(size / 24, size / 24)
     ink = QColor("#202034")
-    pastel = QColor(PASTELS[sum(map(ord, key)) % len(PASTELS)])
+    source = QColor(accent)
+    pastel = QColor.fromRgbF(source.redF() * .78 + .22, source.greenF() * .78 + .22, source.blueF() * .78 + .22)
     p.setPen(QPen(ink, 1.15, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
 
     def box(x, y, w, h, color, radius=1.5):
@@ -29,20 +30,29 @@ def draw_illustrated(p, rect, key, line_name, qta):
         p.setPen(QPen(ink, .7))
         p.drawArc(QRectF(x - 1, y + .2, 2, 1.6), 180 * 16, 180 * 16)
 
-    if key == "dumbbell":
-        box(3, 10, 18, 4, "#B7A2E8")
-        box(2, 6, 4, 12, "#9695D4")
-        box(6, 4, 3, 16, "#B7A2E8")
-        box(15, 4, 3, 16, "#B7A2E8")
-        box(18, 6, 4, 12, "#9695D4")
+    if key == "piggy-bank":
+        p.setBrush(pastel)
+        p.drawEllipse(QRectF(3, 6, 17, 13))
+        box(4, 16, 3, 5, pastel)
+        box(15, 16, 3, 5, pastel)
+        box(17, 10, 5, 5, pastel.lighter(115))
+        box(14, 4, 3, 5, pastel)
+        p.drawLine(8, 8, 12, 8)
+        face(12, 12)
+    elif key == "dumbbell":
+        box(3, 10, 18, 4, pastel)
+        box(2, 6, 4, 12, pastel.darker(115))
+        box(6, 4, 3, 16, pastel)
+        box(15, 4, 3, 16, pastel)
+        box(18, 6, 4, 12, pastel.darker(115))
         face(12, 11)
-    elif key in ("wallet", "card", "money"):
-        box(2, 5, 20, 15, "#B7A2E8", 3)
+    elif key == "wallet":
+        box(2, 5, 20, 15, pastel, 3)
         box(2, 7, 20, 3, "#FFD88A", .5)
         face(11, 14)
         box(17, 12, 5, 5, "#83C6FA")
     elif key == "phone":
-        box(5, 1, 14, 22, "#9695D4", 3)
+        box(5, 1, 14, 22, pastel, 3)
         box(7, 5, 10, 13, "#83C6FA")
         face(12, 11)
         box(10, 20, 4, 1, "#FFD88A", .5)

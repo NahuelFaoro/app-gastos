@@ -79,6 +79,8 @@ QTA_ICON_MAP = {'wallet': 'ri.wallet-3-line',
  'transfer': 'ri.arrow-left-right-line',
  'plus': 'ri.add-line',
  'other': 'ri.more-line'}
+QTA_ICON_MAP.update({'piggy-bank': 'ri.safe-line', 'coins': 'ri.coins-line', 'safe': 'ri.safe-2-line', 'ticket': 'ph.ticket', 'handshake': 'ph.handshake', 'tree': 'ph.tree', 'dog': 'ph.dog', 'cat': 'ph.cat', 'baby': 'ph.baby', 'bed': 'ph.bed', 'camera': 'ph.camera', 'pizza': 'ph.pizza', 'cake': 'ph.cake', 'bus': 'ph.bus', 'train': 'ph.train', 'headphones': 'ph.headphones', 'paint': 'ph.paint-brush', 'plant': 'ri.plant-line', 'investment': 'ph.chart-line-up', 'brain': 'ph.brain', 'graduation': 'ph.graduation-cap'})
+
 
 
 def _star_points(cx: float, cy: float, outer: float, inner: float, count: int = 5) -> QPolygonF:
@@ -126,7 +128,7 @@ def draw_icon(
     key = normalize_icon(icon)
     resolved_color = QColor(color)
     if illustrated_style() and qta is not None:
-        draw_illustrated(p, rect, key, QTA_ICON_MAP.get(key, QTA_ICON_MAP["other"]), qta)
+        draw_illustrated(p, rect, key, QTA_ICON_MAP.get(key, QTA_ICON_MAP["other"]), qta, resolved_color)
         return
     if _draw_qta_icon(p, rect, key, resolved_color):
         return

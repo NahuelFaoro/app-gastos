@@ -24,6 +24,8 @@ ICON_CATALOG = [
     ("transfer", "Transferencia"), ("plus", "Agregar"), ("other", "Otro"),
 ]
 
+ICON_CATALOG += [('piggy-bank', 'Alcancía / ahorro'), ('coins', 'Monedas'), ('safe', 'Caja fuerte'), ('ticket', 'Entrada / espectáculo'), ('handshake', 'Acuerdo / clientes'), ('tree', 'Naturaleza'), ('dog', 'Perro'), ('cat', 'Gato'), ('baby', 'Bebé'), ('bed', 'Descanso'), ('camera', 'Fotografía'), ('pizza', 'Pizza'), ('cake', 'Torta / cumpleaños'), ('bus', 'Colectivo'), ('train', 'Tren'), ('headphones', 'Auriculares'), ('paint', 'Arte'), ('plant', 'Plantas'), ('investment', 'Inversión')]
+
 ICON_KEYS = [key for key, _ in ICON_CATALOG]
 ICON_LABELS = dict(ICON_CATALOG)
 

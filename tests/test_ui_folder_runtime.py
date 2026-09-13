@@ -251,3 +251,41 @@ class RequestedUiRuntimeTests(unittest.TestCase):
             self.app.processEvents()
         finally:
             self.app.setProperty("icon_style", previous)
+
+    def test_customization_responsive_rows_preserve_values(self):
+        from app.pages.work_config import WorkCustomizationDialog
+        dialog = WorkCustomizationDialog(self.db)
+        before = [(r.name.text(), r.field_type.currentData(), r.active.isChecked()) for r in dialog.fields.rows]
+        for width in (960, 620, 960):
+            self.display(dialog, width, 820)
+            self.assertEqual(dialog.fields.scroll.horizontalScrollBar().maximum(), 0)
+            self.capture(dialog, f"customization-fields-{width}")
+            for row in dialog.fields.rows:
+                self.assertGreater(row.name.width(), 70)
+                self.assertGreater(row.field_type.width(), 70)
+        self.assertEqual(before, [(r.name.text(), r.field_type.currentData(), r.active.isChecked()) for r in dialog.fields.rows])
+        from PySide6.QtWidgets import QTabWidget
+        dialog.findChild(QTabWidget).setCurrentIndex(1)
+        self.app.processEvents()
+        self.capture(dialog, "customization-rates")
+
+    def test_account_shapes_and_selected_colors(self):
+        from app.widgets import AccountCard, IconBadge
+        from PySide6.QtWidgets import QWidget, QGridLayout
+        previous = self.app.property("icon_style")
+        host = QWidget()
+        grid = QGridLayout(host)
+        try:
+            self.app.setProperty("icon_style", "illustrated")
+            shapes = []
+            for index, (kind, color) in enumerate((("Ahorro", "#9933DD"), ("Efectivo", "#008844"), ("Billetera", "#0099CC"), ("Tarjeta", "#DD3344"))):
+                card = AccountCard(dict(id=index+1, name=kind, type=kind, color=color), "$ 12.000", "$ 0")
+                grid.addWidget(card, index // 2, index % 2)
+                badge = card.findChild(IconBadge)
+                shapes.append(badge.icon)
+                self.assertEqual(badge.color.name(), color.lower())
+            self.assertEqual(len(set(shapes)), 4)
+            self.display(host, 850, 410)
+            self.capture(host, "accounts-colors")
+        finally:
+            self.app.setProperty("icon_style", previous)

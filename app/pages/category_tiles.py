@@ -77,7 +77,10 @@ class CategoryTile(QFrame):
         self.disclosure.setEnabled(self.has_children)
         self.disclosure.clicked.connect(lambda: self.opened.emit(self.cid))
         root.addWidget(self.disclosure)
-        badge = IconBadge(category.get("icon") or "other", category.get("color") or "#4CCFA9", 34,
+        icon = category.get("icon") or "other"
+        if icon in ("medical", "health", "other") and "psic" in str(category.get("name", "")).casefold():
+            icon = "brain"
+        badge = IconBadge(icon, category.get("color") or "#4CCFA9", 34,
                           secondary_color=category.get("secondary_color"))
         badge.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         root.addWidget(badge)

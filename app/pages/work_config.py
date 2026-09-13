@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from PySide6.QtCore import QTimer, Qt
 from PySide6.QtWidgets import (
     QComboBox,
+    QGridLayout,
     QDialog,
     QFrame,
     QHBoxLayout,
@@ -47,6 +48,55 @@ FIELD_TYPES = (
 def _icon_button(icon_name: str, fallback: str, tooltip: str, danger: bool = False) -> QPushButton:
     return make_icon_button(icon_name, fallback, tooltip, danger=danger)
 
+
+
+class EditorHeader(QWidget):
+    """Campos alineados y acciones fijas con reflujo en ventanas angostas."""
+    def __init__(self, name, kind, toggles, actions, parent=None):
+        super().__init__(parent)
+        self.grid = QGridLayout(self)
+        self.grid.setContentsMargins(0, 0, 0, 0)
+        self.grid.setHorizontalSpacing(16)
+        self.grid.setVerticalSpacing(10)
+        self.parts = []
+        for label, control in (("Nombre", name), ("Tipo", kind)):
+            host = QWidget()
+            box = QVBoxLayout(host)
+            box.setContentsMargins(0, 0, 0, 0)
+            caption = QLabel(label)
+            caption.setObjectName("SmallMuted")
+            box.addWidget(caption)
+            control.setMinimumWidth(0)
+            box.addWidget(control)
+            self.parts.append(host)
+        self.parts.extend((toggles, actions))
+        self._compact = None
+        self._arrange()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._arrange()
+
+    def _arrange(self):
+        compact = self.width() < 620
+        if compact == self._compact:
+            return
+        self._compact = compact
+        for part in self.parts:
+            self.grid.removeWidget(part)
+        for column in range(3):
+            self.grid.setColumnStretch(column, 0)
+        self.grid.setColumnStretch(0, 1)
+        if compact:
+            for index, part in enumerate(self.parts[:3]):
+                self.grid.addWidget(part, index, 0)
+            self.grid.addWidget(self.parts[3], 0, 1, 3, 1, Qt.AlignmentFlag.AlignTop)
+        else:
+            self.grid.setColumnStretch(1, 1)
+            self.grid.addWidget(self.parts[0], 0, 0)
+            self.grid.addWidget(self.parts[1], 0, 1)
+            self.grid.addWidget(self.parts[2], 1, 0, 1, 2)
+            self.grid.addWidget(self.parts[3], 0, 2, 2, 1, Qt.AlignmentFlag.AlignTop)
 
 
 class ChoiceOptionsEditor(QFrame):
@@ -224,11 +274,9 @@ class WorkFieldsTab(QWidget):
         frame = QFrame()
         frame.setObjectName("WorkConfigCard")
         root = QVBoxLayout(frame)
-        root.setContentsMargins(13, 11, 13, 11)
+        root.setContentsMargins(18, 16, 18, 16)
         root.setSpacing(9)
 
-        top_host = QWidget()
-        top = FlowLayout(top_host, horizontal_spacing=9, vertical_spacing=8)
         name = QLineEdit()
         name.setPlaceholderText("Nombre del campo")
         name.setMinimumWidth(220)
@@ -236,30 +284,28 @@ class WorkFieldsTab(QWidget):
         field_type.setMinimumWidth(170)
         for label, value in FIELD_TYPES:
             field_type.addItem(label, value)
-        top.addWidget(name)
-        top.addWidget(field_type)
 
         switches_host = QWidget()
         switches_host.setMinimumWidth(170)
-        switches = QVBoxLayout(switches_host)
+        switches = QHBoxLayout(switches_host)
         switches.setContentsMargins(0, 0, 0, 0)
-        switches.setSpacing(5)
+        switches.setSpacing(24)
         active = SlideSwitch()
         summary = SlideSwitch()
         active_row = QHBoxLayout()
         active_row.addWidget(QLabel("Activo"), 1)
         active_row.addWidget(active)
         summary_row = QHBoxLayout()
-        summary_row.addWidget(QLabel("Mostrar en resumen"), 1)
+        summary_row.addWidget(QLabel("En resumen"), 1)
         summary_row.addWidget(summary)
         switches.addLayout(active_row)
         switches.addLayout(summary_row)
-        top.addWidget(switches_host)
 
         actions = make_reorder_actions("Eliminar campo")
         up, down, remove = actions.up, actions.down, actions.remove
-        top.addWidget(actions.host)
-        root.addWidget(top_host)
+        for button in (up, down, remove):
+            button.setFixedSize(32, 32)
+        root.addWidget(EditorHeader(name, field_type, switches_host, actions.host))
 
         options = ChoiceOptionsEditor((data or {}).get("options") or [])
         root.addWidget(options)
@@ -405,10 +451,8 @@ class WorkRatesTab(QWidget):
         frame = QFrame()
         frame.setObjectName("WorkConfigCard")
         root = QVBoxLayout(frame)
-        root.setContentsMargins(13, 11, 13, 11)
+        root.setContentsMargins(18, 16, 18, 16)
         root.setSpacing(9)
-        top_host = QWidget()
-        top = FlowLayout(top_host, horizontal_spacing=9, vertical_spacing=8)
         name = QLineEdit()
         name.setPlaceholderText("Nombre de la tarifa")
         name.setMinimumWidth(220)
@@ -416,8 +460,6 @@ class WorkRatesTab(QWidget):
         mode.setMinimumWidth(170)
         mode.addItem("Por unidad", "unit")
         mode.addItem("Por opción", "option")
-        top.addWidget(name)
-        top.addWidget(mode)
         active_host = QWidget()
         active_host.setMinimumWidth(130)
         active_box = QVBoxLayout(active_host)
@@ -428,11 +470,11 @@ class WorkRatesTab(QWidget):
         active_row.addWidget(active)
         active_box.addLayout(active_row)
         active_box.addStretch()
-        top.addWidget(active_host)
         actions = make_reorder_actions("Eliminar tarifa")
         up, down, remove = actions.up, actions.down, actions.remove
-        top.addWidget(actions.host)
-        root.addWidget(top_host)
+        for button in (up, down, remove):
+            button.setFixedSize(32, 32)
+        root.addWidget(EditorHeader(name, mode, active_host, actions.host))
 
         unit_host = QFrame()
         unit_host.setObjectName("WorkConfigInset")

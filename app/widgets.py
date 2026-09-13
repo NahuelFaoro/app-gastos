@@ -597,15 +597,10 @@ class AccountCard(QFrame):
         root.setContentsMargins(17, 14, 17, 15)
         root.setSpacing(8)
 
-        accent_line = QFrame(); accent_line.setFixedHeight(3); accent_line.setObjectName("AccountAccent")
-        accent_color = account.get("color") or "#4CCFA9"
-        accent_line.setStyleSheet(f"background:{accent_color}; border:none; border-radius:1px;")
-        root.addWidget(accent_line)
-
         top = QHBoxLayout(); top.setSpacing(10)
         type_name = account.get("type") or "Cuenta"
-        icon_map = {"Tarjeta":"card", "Banco":"bank", "Billetera":"wallet", "Efectivo":"money", "Ahorro":"wallet", "Cuenta":"wallet"}
-        top.addWidget(IconBadge(icon_map.get(type_name, "wallet"), account.get("color") or "#4CCFA9", 38))
+        icon_map = {"Tarjeta":"card", "Banco":"bank", "Billetera":"wallet", "Efectivo":"money", "Ahorro":"piggy-bank", "Inversión":"investment", "Otra":"safe", "Cuenta":"bank"}
+        top.addWidget(IconBadge(icon_map.get(type_name, "wallet"), account.get("color") or "#4CCFA9", 52))
         texts = QVBoxLayout(); texts.setSpacing(0)
         name = QLabel(account["name"]); name.setObjectName("AccountName")
         type_lbl = QLabel(type_name); type_lbl.setObjectName("AccountType")
