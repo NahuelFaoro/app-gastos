@@ -235,6 +235,14 @@ class IconBadge(QWidget):
             if color.saturation() < 40:
                 color = color.lighter(108)
 
+            from .icons import illustrated_style
+            if illustrated_style():
+                # Fondo claro para que el contorno oscuro se lea también en tema oscuro.
+                p.setPen(Qt.PenStyle.NoPen)
+                p.setBrush(QColor("#F5F1EB"))
+                p.drawRoundedRect(rect, self.badge_size * .23, self.badge_size * .23)
+                draw_icon(p, rect.adjusted(3, 3, -3, -3), self.icon, color)
+                return
             # Superficie tenue, sin sombras ni anillos brillantes.
             fill = QColor(color)
             fill.setAlpha(24)

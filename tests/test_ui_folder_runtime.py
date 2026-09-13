@@ -227,3 +227,27 @@ class RequestedUiRuntimeTests(unittest.TestCase):
             with self.subTest(icon=key):
                 pixmap = qta.icon(name, color="#9988DD").pixmap(32, 32)
                 self.assertFalse(pixmap.isNull())
+
+    def test_illustrated_catalog_and_style_switch(self):
+        from app.icons import QTA_ICON_MAP
+        from app.widgets import IconBadge
+        from PySide6.QtWidgets import QWidget, QGridLayout
+        import qtawesome as qta
+        host = QWidget()
+        grid = QGridLayout(host)
+        previous = self.app.property("icon_style")
+        try:
+            self.app.setProperty("icon_style", "illustrated")
+            for index, (key, name) in enumerate(QTA_ICON_MAP.items()):
+                # Validación explícita antes de pintar: evita errores silenciosos en paintEvent.
+                qta.icon(name.removesuffix("-line") + "-fill")
+                grid.addWidget(IconBadge(key, "#B7A2E8", 54), index // 9, index % 9)
+            self.display(host, 650, 530)
+            self.capture(host, "illustrated-catalog")
+            page = self.display(CategoriesPage(self.db), 1500, 900)
+            self.capture(page, "categories-illustrated")
+            self.app.setProperty("icon_style", "outline")
+            host.update()
+            self.app.processEvents()
+        finally:
+            self.app.setProperty("icon_style", previous)

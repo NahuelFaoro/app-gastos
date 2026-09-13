@@ -1,3 +1,9 @@
+# v0.39.26 — Variante de iconos ilustrados
+
+- Añade una variante pastel con contornos oscuros, fondo claro y detalles expresivos para probar en categorías.
+- Ajustes permite guardar Ilustrados o Contorno y aplicar la elección sin reiniciar. La elección inicial sin preferencia guardada es Ilustrados.
+- Combina dibujos vectoriales locales para objetos seleccionados con capas Remix de relleno/contorno. No agrega descargas ni altera categorías existentes.
+
 # v0.39.25 — KM legible e iconos de contorno
 
 - Reduce KM a total y una línea de promedio con tipografía secundaria; ayuda contextual conserva días y fórmula. Evita el desborde a 160 px.

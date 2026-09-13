@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import math
+from PySide6.QtWidgets import QApplication
+from .illustrated_icons import draw_illustrated
 
 from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QPolygonF
@@ -108,6 +110,11 @@ def _draw_qta_icon(p: QPainter, rect: QRectF, key: str, color: QColor) -> bool:
         return False
 
 
+def illustrated_style() -> bool:
+    app = QApplication.instance()
+    return bool(app and app.property("icon_style") == "illustrated")
+
+
 def draw_icon(
     p: QPainter,
     rect: QRectF,
@@ -118,6 +125,9 @@ def draw_icon(
     """Dibuja un ícono consistente con qtawesome y fallback vectorial local."""
     key = normalize_icon(icon)
     resolved_color = QColor(color)
+    if illustrated_style() and qta is not None:
+        draw_illustrated(p, rect, key, QTA_ICON_MAP.get(key, QTA_ICON_MAP["other"]), qta)
+        return
     if _draw_qta_icon(p, rect, key, resolved_color):
         return
     _draw_fallback_icon(p, rect, key, resolved_color, stroke)

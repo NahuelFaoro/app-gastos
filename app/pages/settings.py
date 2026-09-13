@@ -91,6 +91,11 @@ class SettingsPage(QWidget):
         elif current_theme == "light": current_theme = "light_mint"
         i=self.theme.findData(current_theme); self.theme.setCurrentIndex(max(i,0))
         self._loaded_theme=current_theme
+        self.icon_style = QComboBox()
+        self.icon_style.addItem("Ilustrados · pastel", "illustrated")
+        self.icon_style.addItem("Contorno · sobrios", "outline")
+        self.icon_style.setCurrentIndex(max(0, self.icon_style.findData(db.get_setting("icon_style", "illustrated"))))
+        form.addRow("Estilo de iconos", self.icon_style)
         self.ui_scale=QComboBox()
         for label,value in (("80% · Compacto",0.80),("90%",0.90),("100% · Normal",1.00),("110%",1.10),("125% · Cómodo",1.25),("140% · Grande",1.40),("160% · Muy grande",1.60),("180%",1.80),("200% · Máximo",2.00)):
             self.ui_scale.addItem(label,value)
@@ -168,6 +173,13 @@ class SettingsPage(QWidget):
         self._apply_responsive()
 
     def save_preferences(self):
+        from PySide6.QtWidgets import QApplication
+        icon_style = self.icon_style.currentData()
+        self.db.set_setting("icon_style", icon_style)
+        app = QApplication.instance()
+        app.setProperty("icon_style", icon_style)
+        for widget in app.allWidgets():
+            widget.update()
         theme=self.theme.currentData()
         scale=float(self.ui_scale.currentData() or 1.0)
         theme_changed = theme != getattr(self, "_loaded_theme", theme)

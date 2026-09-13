@@ -1,4 +1,9 @@
-# Validación v0.39.25
+# Validación v0.39.26
+
+## Revisión v0.39.26
+
+- Catálogo ilustrado completo renderizado con datos temporales; selección de variante y vuelta a contorno.
+- Capturas de catálogo y categorías para comprobar legibilidad sobre tema oscuro.
 
 ## Revisión v0.39.25
 
@@ -42,13 +47,13 @@
 
 ## Comprobaciones ejecutadas (2026-09-13)
 
-- `python -m scripts.validate_project`: auditoría de arquitectura, compilación y **94 pruebas automáticas OK**.
+- `python -m scripts.validate_project`: auditoría de arquitectura, compilación y **95 pruebas automáticas OK**.
 - `python -m scripts.check_app`: **APP_GASTOS_SMOKE_OK** usando PySide6 nativo y una base temporal.
 - Pruebas HTTP reales sobre loopback: vinculación, lectura y escritura autenticadas, límite de intentos, JSON/tamaños inválidos y rechazo previo a lectura sin autenticación.
 - Regresiones monetarias: redondeo a centavos, entradas no finitas, cuotas que suman el total, proyección consistente y rechazo atómico de planes inválidos.
 - Reapertura de base temporal: conserva valores históricos con más de dos decimales y cuota base existente. La versión 0.39.23 agregó data_migrations para registrar adaptaciones ejecutadas; esta entrega no cambia el esquema. Las pruebas usan bases temporales y no modifican la base personal. La reparación puntual de categorías de v0.39.22 quedó respaldada y no se repite automáticamente.
 
-`start.bat` obtiene APP_VERSION y ejecuta el smoke una vez por versión; para esta entrega usa `.smoke_v0.39.25`.
+`start.bat` obtiene APP_VERSION y ejecuta el smoke una vez por versión; para esta entrega usa `.smoke_v0.39.26`.
 
 El smoke verifica construcción, layouts y diálogos. No equivale a una revisión visual manual completa ni a una prueba del acceso desde un teléfono físico. No se verificaron llamadas reales a Mercado Pago ni OCR con comprobantes personales. Tampoco se generó un ejecutable de distribución.
 

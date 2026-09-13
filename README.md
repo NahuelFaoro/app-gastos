@@ -1,4 +1,4 @@
-# App Gastos v0.39.25
+# App Gastos v0.39.26
 
 Aplicación de finanzas personales con herramientas de trabajo integradas.
 
@@ -8,11 +8,11 @@ Abrí **`start.bat`**. La primera ejecución crea/actualiza `.venv`, instala las
 
 La base principal se guarda en `%APPDATA%\AppGastos\app_gastos.db`, fuera de la carpeta del programa. Cambiar de versión no elimina tus datos.
 
-## Qué cambia en v0.39.25
+## Qué cambia en v0.39.26
 
-- KM reales muestra el promedio en una línea compacta sin superposición, en semana y mes. La cantidad de días y la fórmula quedan en la ayuda al pasar el cursor.
-- Catálogo de iconos Remix de contorno; badges con fondo tenue, esquinas redondeadas y segundo color como acento lateral.
-- Conserva las categorías, colores e identificadores existentes.
+- Variante de iconos ilustrados con colores pastel, contornos oscuros y detalles expresivos en algunos objetos.
+- Ajustes → Estilo de iconos permite elegir Ilustrados o Contorno. Guardar preferencias lo aplica en el momento.
+- Ilustrados se usa como estilo de prueba inicial si no hay una preferencia guardada. No cambia los identificadores ni los colores de las categorías.
 
 ## Base v0.39
 
@@ -57,7 +57,7 @@ En Windows ejecutá:
 
 `scripts\windows\build_share.bat`
 
-Genera `dist\AppGastos_v0.39.25_LITE.zip`. Excluye el motor OCR local (RapidOCR/ONNX/PyMuPDF), que era la principal causa del tamaño de las builds anteriores.
+Genera `dist\AppGastos_v0.39.26_LITE.zip`. Excluye el motor OCR local (RapidOCR/ONNX/PyMuPDF), que era la principal causa del tamaño de las builds anteriores.
 
 La build completa con OCR sigue disponible mediante `scripts\windows\build_windows_full.bat`.
 

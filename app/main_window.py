@@ -55,6 +55,7 @@ class MainWindow(QMainWindow):
     def __init__(self, db, generated_recurring=0, generated_installments=0):
         super().__init__()
         self.db = db
+        QApplication.instance().setProperty("icon_style", db.get_setting("icon_style", "illustrated"))
         self.setWindowTitle("App Gastos")
         self.resize(1480, 900)
         self.setMinimumSize(560, 600)
