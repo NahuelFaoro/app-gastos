@@ -1,3 +1,9 @@
+# v0.39.24 — Promedio diario de KM
+
+- Conserva las guías de categorías y elimina los cortes entre filas, manteniendo sangría y paneles desplegables.
+- Tarjeta KM compartida muestra promedio por día con registro completo y cantidad de días incluidos en vistas semanal y mensual, sin tarjetas adicionales.
+- Días sin ambos odómetros quedan fuera; días completos con 0 km se incluyen. Sin datos se muestra —.
+
 # v0.39.23 — Jerarquías claras y movimientos reversibles
 
 - Guías visuales y sangría de 22 px por nivel (hasta cuatro niveles para conservar espacio en ventanas angostas).

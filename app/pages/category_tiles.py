@@ -215,7 +215,7 @@ class CategoryPanel(QFrame):
         self.searching = visible_ids is not None
         layout = QVBoxLayout(self)
         layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(4)
+        layout.setSpacing(0)
         pending = [(category, 0, None)]
         while pending:
             item, depth, parent_id = pending.pop()

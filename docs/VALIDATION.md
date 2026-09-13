@@ -1,4 +1,9 @@
-# Validación v0.39.23
+# Validación v0.39.24
+
+## Revisión v0.39.24
+
+- Promedio diario semanal y mensual con días incompletos, jornadas de 0 km, límites del mes y período vacío.
+- Capturas de la tarjeta KM y categorías con guías continuas con datos temporales.
 
 ## Revisión v0.39.23
 
@@ -31,13 +36,13 @@
 
 ## Comprobaciones ejecutadas (2026-09-13)
 
-- `python -m scripts.validate_project`: auditoría de arquitectura, compilación y **91 pruebas automáticas OK**.
+- `python -m scripts.validate_project`: auditoría de arquitectura, compilación y **92 pruebas automáticas OK**.
 - `python -m scripts.check_app`: **APP_GASTOS_SMOKE_OK** usando PySide6 nativo y una base temporal.
 - Pruebas HTTP reales sobre loopback: vinculación, lectura y escritura autenticadas, límite de intentos, JSON/tamaños inválidos y rechazo previo a lectura sin autenticación.
 - Regresiones monetarias: redondeo a centavos, entradas no finitas, cuotas que suman el total, proyección consistente y rechazo atómico de planes inválidos.
-- Reapertura de base temporal: conserva valores históricos con más de dos decimales y cuota base existente. Esta entrega agrega data_migrations para registrar adaptaciones ejecutadas. Las pruebas usan bases temporales y no modifican la base personal. La reparación puntual de categorías de v0.39.22 quedó respaldada y no se repite automáticamente.
+- Reapertura de base temporal: conserva valores históricos con más de dos decimales y cuota base existente. La versión 0.39.23 agregó data_migrations para registrar adaptaciones ejecutadas; esta entrega no cambia el esquema. Las pruebas usan bases temporales y no modifican la base personal. La reparación puntual de categorías de v0.39.22 quedó respaldada y no se repite automáticamente.
 
-`start.bat` obtiene APP_VERSION y ejecuta el smoke una vez por versión; para esta entrega usa `.smoke_v0.39.23`.
+`start.bat` obtiene APP_VERSION y ejecuta el smoke una vez por versión; para esta entrega usa `.smoke_v0.39.24`.
 
 El smoke verifica construcción, layouts y diálogos. No equivale a una revisión visual manual completa ni a una prueba del acceso desde un teléfono físico. No se verificaron llamadas reales a Mercado Pago ni OCR con comprobantes personales. Tampoco se generó un ejecutable de distribución.
 

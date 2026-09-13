@@ -256,10 +256,7 @@ class WorkMonthSummaryDialog(QDialog):
         for field_id, card in self.field_metrics.items():
             count = field_counts.get(field_id, 0)
             card.set_value(str(int(count)) if float(count).is_integer() else f"{count:g}")
-        self.metrics["real_km"].set_value(
-            f"{summary['real_km']:.1f} km" if summary["completed_days"] else "—",
-            hint=f"{summary['completed_days']} días completos",
-        )
+        self.metrics["real_km"].set_mileage(summary)
         self.metrics["charged"].set_value(money(summary["charged"], symbol, hidden))
 
         weeks = self.db.work_month_week_summaries(self.year, self.month)

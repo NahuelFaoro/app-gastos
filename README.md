@@ -1,4 +1,4 @@
-# App Gastos v0.39.23
+# App Gastos v0.39.24
 
 Aplicación de finanzas personales con herramientas de trabajo integradas.
 
@@ -8,12 +8,11 @@ Abrí **`start.bat`**. La primera ejecución crea/actualiza `.venv`, instala las
 
 La base principal se guarda en `%APPDATA%\AppGastos\app_gastos.db`, fuera de la carpeta del programa. Cambiar de versión no elimina tus datos.
 
-## Qué cambia en v0.39.23
+## Qué cambia en v0.39.24
 
-- Jerarquías con guías suaves y mayor sangría; la flecha indica la ruta de destino.
-- Aviso después de mover con ↑ o arrastrar y botón Deshacer para el último movimiento de la sesión.
-- Deshacer comprueba que la ubicación no haya cambiado y conserva los registros relacionados.
-- La adaptación de históricos antiguos se registra una sola vez; las importaciones posteriores se ejecutan explícitamente.
+- Categorías conserva la sangría y las guías, ahora continuas sin cortes entre filas.
+- KM reales muestra el promedio diario dentro de la misma tarjeta, en los resúmenes semanal y mensual.
+- Promedio calculado sobre días con odómetro inicial y final, incluyendo jornadas completas de 0 km y excluyendo registros incompletos.
 
 ## Base v0.39
 
@@ -58,7 +57,7 @@ En Windows ejecutá:
 
 `scripts\windows\build_share.bat`
 
-Genera `dist\AppGastos_v0.39.23_LITE.zip`. Excluye el motor OCR local (RapidOCR/ONNX/PyMuPDF), que era la principal causa del tamaño de las builds anteriores.
+Genera `dist\AppGastos_v0.39.24_LITE.zip`. Excluye el motor OCR local (RapidOCR/ONNX/PyMuPDF), que era la principal causa del tamaño de las builds anteriores.
 
 La build completa con OCR sigue disponible mediante `scripts\windows\build_windows_full.bat`.
 

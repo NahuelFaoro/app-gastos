@@ -172,3 +172,27 @@ class RequestedUiRuntimeTests(unittest.TestCase):
         self.assertIn("No se pudo deshacer", page.move_message.text())
         self.assertTrue(page.undo_button.isHidden())
         self.capture(page, "categories-undo")
+
+    def test_mileage_average_uses_complete_days_in_week_and_month(self):
+        from app.pages.viajes_widgets import WorkMetricCard
+        self.db.set_work_day_mileage("2026-09-07", 1000, 1080)
+        self.db.set_work_day_mileage("2026-09-08", 1080, 1100)
+        self.db.set_work_day_mileage("2026-09-09", 1100, None)
+        self.db.set_work_day_mileage("2026-09-10", 1100, 1100)
+        # El mes incluye otra semana; agosto no debe entrar.
+        self.db.set_work_day_mileage("2026-09-14", 1100, 1200)
+        self.db.set_work_day_mileage("2026-08-31", 900, 1000)
+        card = self.display(WorkMetricCard("KM reales", 170), 240, 112)
+        for summary, average, count in (
+            (self.db.work_week_mileage_summary("2026-09-07"), "33.3", 3),
+            (self.db.work_month_summary(2026, 9), "50.0", 4),
+        ):
+            card.set_mileage(summary)
+            self.app.processEvents()
+            self.assertEqual(card.secondary.text(), f"Promedio: {average} km/día")
+            self.assertEqual(card.hint.text(), f"{count} días con registro")
+            self.assertLessEqual(card.hint.geometry().bottom(), card.height())
+            self.capture(card, f"mileage-average-{count}")
+        card.set_mileage(self.db.work_month_summary(2026, 10))
+        self.assertEqual(card.value.text(), "—")
+        self.assertEqual(card.secondary.text(), "Promedio: —")

@@ -524,11 +524,7 @@ class ViajesPage(QWidget):
             hint = "paradas · clic para inspeccionar" if filter_key == "flex" else "viajes · clic para inspeccionar"
             card.set_value(shown, hint=hint)
         mileage = self.db.work_week_mileage_summary(self.current_week)
-        real_km = float(mileage.get("real_km") or 0)
-        completed_days = int(mileage.get("completed_days") or 0)
-        km_value = f"{real_km:.1f} km" if completed_days else "—"
-        day_label = "día completo" if completed_days == 1 else "días completos"
-        self.stat_km.set_value(km_value, hint=f"{completed_days} {day_label}")
+        self.stat_km.set_mileage(mileage)
         self.stat_charged.set_value(
             money(summary["charged"], self.db.currency_symbol(), self.db.balances_hidden()),
             hint="total semanal",
