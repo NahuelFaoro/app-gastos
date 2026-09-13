@@ -3,7 +3,7 @@ import tempfile
 import threading
 import unittest
 from concurrent.futures import ThreadPoolExecutor
-from http.client import HTTPConnection
+from http.client import HTTPConnection, HTTPResponse
 from pathlib import Path
 
 from app.constants import APP_VERSION
@@ -52,8 +52,17 @@ class MobileHTTPTests(unittest.TestCase):
             request_headers["X-AppGastos-Token"] = self.token
         request_headers.update(headers or {})
         try:
-            connection.request(method, path, body=body, headers=request_headers)
-            response = connection.getresponse()
+            # Cabeceras y cuerpo juntos: los casos de rechazo temprano no deben
+            # intentar enviar otro paquete después del cierre del servidor.
+            raw = body.encode("utf-8") if isinstance(body, str) else body or b""
+            request_headers.setdefault("Content-Length", str(len(raw)))
+            request_headers["Host"] = "127.0.0.1"
+            message = f"{method} {path} HTTP/1.0\r\n"
+            message += "".join(f"{key}: {value}\r\n" for key, value in request_headers.items())
+            connection.connect()
+            connection.send(message.encode("latin-1") + b"\r\n" + raw)
+            response = HTTPResponse(connection.sock)
+            response.begin()
             return response.status, dict(response.getheaders()), json.loads(response.read())
         finally:
             connection.close()
@@ -86,11 +95,13 @@ class MobileHTTPTests(unittest.TestCase):
         self.assertEqual(self.db.transactions(), [])
 
     def test_content_type_and_length_limits(self):
-        self.assertEqual(self.request("POST", "/api/transactions", "{}", True,
-                                     {"Content-Type": "text/plain"})[0], 415)
-        self.assertEqual(self.request("PUT", "/api/transactions", "{}", True,
+        # Estos rechazos ocurren al leer cabeceras: no enviar un cuerpo después
+        # de que el servidor cierre evita una carrera TCP de Windows en el test.
+        self.assertEqual(self.request("POST", "/api/transactions", None, True,
+                                     {"Content-Type": "text/plain", "Content-Length": "2"})[0], 415)
+        self.assertEqual(self.request("PUT", "/api/transactions", None, True,
                                      {"Content-Length": "-1"})[0], 400)
-        self.assertEqual(self.request("POST", "/api/pair", "{}",
+        self.assertEqual(self.request("POST", "/api/pair", None,
                                      headers={"Content-Length": "1025"})[0], 413)
 
     def test_authenticated_write_still_works(self):

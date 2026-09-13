@@ -1,14 +1,24 @@
-# Validación v0.39.19
+# Validación v0.39.20
+
+## Revisión visual v0.39.20
+
+- Capturas Qt con datos genéricos verificadas en escritorio y ventana angosta; grilla probada a 1500, 768 y 430 px.
+- Análisis alterna 420 → 1500 → 800 → 420 → 1500 px y comprueba el centro del porcentaje y el borde derecho del importe.
+- Flex compara geometría con 0 y 123 envíos y subtotal de siete cifras; el contador conserva su posición.
+- Extra recibe teclado real mediante QTest y persiste cantidad 27.
+- Navegación, búsqueda, drop sobre iconos y drop hacia la raíz conservan IDs y movimientos.
+- Las capturas locales se generan definiendo APPGASTOS_UI_CAPTURE=dist/ui-review al ejecutar tests/test_ui_folder_runtime.py; no se suben imágenes ni bases personales.
+- Dos tests estructurales del árbol plegable se retiraron porque esa vista fue reemplazada; cuatro tests de comportamiento Qt cubren los nuevos contratos.
 
 ## Comprobaciones ejecutadas (2026-09-13)
 
-- `python -m scripts.validate_project`: auditoría de arquitectura, compilación y **85 pruebas automáticas OK**.
+- `python -m scripts.validate_project`: auditoría de arquitectura, compilación y **87 pruebas automáticas OK**.
 - `python -m scripts.check_app`: **APP_GASTOS_SMOKE_OK** usando PySide6 nativo y una base temporal.
 - Pruebas HTTP reales sobre loopback: vinculación, lectura y escritura autenticadas, límite de intentos, JSON/tamaños inválidos y rechazo previo a lectura sin autenticación.
 - Regresiones monetarias: redondeo a centavos, entradas no finitas, cuotas que suman el total, proyección consistente y rechazo atómico de planes inválidos.
 - Reapertura de base temporal: conserva valores históricos con más de dos decimales y cuota base existente. Esta entrega no cambia el esquema; no se abrió la base personal del usuario.
 
-`start.bat` obtiene APP_VERSION y ejecuta el smoke una vez por versión; para esta entrega usa `.smoke_v0.39.19`.
+`start.bat` obtiene APP_VERSION y ejecuta el smoke una vez por versión; para esta entrega usa `.smoke_v0.39.20`.
 
 El smoke verifica construcción, layouts y diálogos. No equivale a una revisión visual manual completa ni a una prueba del acceso desde un teléfono físico. No se verificaron llamadas reales a Mercado Pago ni OCR con comprobantes personales. Tampoco se generó un ejecutable de distribución.
 
@@ -22,7 +32,7 @@ El smoke verifica construcción, layouts y diálogos. No equivale a una revisió
 ## Regresiones cubiertas
 
 - Drag & drop normal no crea filas: mueve el `parent_id`; si detecta una copia vacía homónima dejada por una build anterior en el destino, elimina únicamente esa copia vacía y conserva el ID/datos del nodo real.
-- El árbol de Categorías retira inmediatamente los widgets viejos después de mover, evitando duplicados visuales fantasma.
+- La grilla de Categorías retira inmediatamente los widgets viejos después de mover, evitando duplicados visuales fantasma.
 - Viajes no usa `FlowLayout` para las tres acciones superiores ni para el resumen semanal: guardar Personalizar reconstruye una grilla estable y uniforme.
 - El chip de filtro de Viajes vive fuera de la fila del buscador y no puede superponerse.
 - Tarifas de Nuevo viaje separan cantidad, tarifa unitaria/opción y total calculado.
@@ -50,7 +60,7 @@ El smoke verifica construcción, layouts y diálogos. No equivale a una revisió
 
 - Herramientas no depende de `FlowLayout` para sus dos accesos principales y fuerza una pasada con la geometría real del viewport.
 - `FlowLayout` no descarta widgets por visibilidad heredada de un ancestro oculto.
-- Expandir/contraer Categorías no llama al refresh completo ni reinicia el scrollbar.
+- En v0.39.20 abrir carpetas sustituye el despliegue de ramas; los refresh estructurales conservan scroll y la navegación explícita lo reinicia.
 
 
 ## Hotfix v0.39.2

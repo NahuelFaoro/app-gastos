@@ -1,3 +1,13 @@
+# v0.39.20 — Carpetas de categorías y correcciones visuales
+
+- Reemplaza la lista jerárquica por una grilla responsive de carpetas e iconos, con vista previa de hijos, ruta y búsqueda global.
+- Drag/drop sobre carpetas y destinos Todas/Subir conserva IDs, subárboles y movimientos. El repositorio sigue rechazando ciclos y cruces entre Gastos/Ingresos.
+- Acciones de edición, duplicado, eliminación y alta de subcategorías disponibles mediante ⋯ o menú contextual; Enter abre y F2 edita.
+- Análisis calcula el modo de cada tarjeta desde su ancho efectivo y vuelve a distribuirla al redimensionar, evitando conservar el layout angosto de una página inicialmente oculta.
+- Flex centra su cabecera con espacio simétrico y reparte contador/subtotal en columnas de igual peso; cambia de distribución al pasar entre los tres modos responsive.
+- Extra elimina el texto especial del QSpinBox que interfería con la edición numérica; muestra 0 para cantidad no especificada.
+- Se sustituyen dos contratos estructurales de la lista plegable por pruebas Qt de navegación, geometría y arrastre de carpetas. No cambia el esquema de datos.
+
 # v0.39.19 — Importes y acceso móvil
 
 - Normalización decimal a centavos (ROUND_HALF_UP) al crear/editar movimientos; rechazo de NaN, infinitos e importes inválidos.

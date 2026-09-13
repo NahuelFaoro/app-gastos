@@ -1,4 +1,4 @@
-# App Gastos v0.39.19
+# App Gastos v0.39.20
 
 Aplicación de finanzas personales con herramientas de trabajo integradas.
 
@@ -8,13 +8,14 @@ Abrí **`start.bat`**. La primera ejecución crea/actualiza `.venv`, instala las
 
 La base principal se guarda en `%APPDATA%\AppGastos\app_gastos.db`, fuera de la carpeta del programa. Cambiar de versión no elimina tus datos.
 
-## Qué cambia en v0.39.19
+## Qué cambia en v0.39.20
 
-- Movimientos nuevos y editados normalizan importes a centavos con redondeo decimal; rechazan valores no finitos.
-- Las cuotas usan cálculo decimal y la última absorbe la diferencia en centavos.
-- Vinculación móvil limitada a cinco intentos por minuto para todo el servidor; solicitudes JSON y tamaños se validan antes de procesar datos.
-- La API informa la versión real de la aplicación. El acceso móvil continúa limitado al uso en una red local de confianza.
-- Conserva el esquema SQLite y los valores históricos existentes. Alcance y próximos pasos en `docs/TECHNICAL_REVIEW.md`.
+- Análisis centra el porcentaje en la tarjeta y alinea los importes a la derecha; cada fila se adapta a su ancho real al redimensionar.
+- Categorías usa una grilla de carpetas responsive con vista previa de subcategorías. Clic abre una carpeta; ⋯ o clic derecho ofrece edición, alta, duplicado y eliminación.
+- Arrastrar sobre una carpeta mueve la categoría dentro de ella. Soltar sobre Todas o Subir permite llevarla al nivel principal o al superior; conserva IDs e historial.
+- Búsqueda por nombre/ruta en todos los niveles y navegación mediante ruta visible.
+- Nuevo extra permite escribir la cantidad de pedidos/viajes; 0 significa sin especificar.
+- Flex mantiene contador y subtotal en columnas equilibradas, aunque crezcan los números.
 
 ## Base v0.39
 
@@ -59,7 +60,7 @@ En Windows ejecutá:
 
 `scripts\windows\build_share.bat`
 
-Genera `dist\AppGastos_v0.39.19_LITE.zip`. Excluye el motor OCR local (RapidOCR/ONNX/PyMuPDF), que era la principal causa del tamaño de las builds anteriores.
+Genera `dist\AppGastos_v0.39.20_LITE.zip`. Excluye el motor OCR local (RapidOCR/ONNX/PyMuPDF), que era la principal causa del tamaño de las builds anteriores.
 
 La build completa con OCR sigue disponible mediante `scripts\windows\build_windows_full.bat`.
 

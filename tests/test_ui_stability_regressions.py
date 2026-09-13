@@ -47,14 +47,6 @@ class UiStabilityRegressionTests(unittest.TestCase):
         self.assertIn("self.home_hint.setFixedWidth(int(target_width))", src)
         self.assertIn("QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed", src)
 
-    def test_category_toggle_is_local_and_does_not_refresh_whole_page(self) -> None:
-        src = self._read("app/pages/categories.py")
-        self.assertIn("row.toggle_requested.connect(self._toggle_node)", src)
-        self.assertIn("def _apply_visibility", src)
-        self.assertIn("row.setVisible(visible)", src)
-        self.assertNotIn("group.toggle_requested.connect(self.toggle_category)", src)
-        self.assertNotIn("def toggle_category", src)
-
     def test_structural_category_refresh_preserves_scroll(self) -> None:
         src = self._read("app/pages/categories.py")
         self.assertIn("def refresh(self, preserve_scroll: bool = True)", src)

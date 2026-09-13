@@ -69,12 +69,6 @@ class RequestedUiContractsTests(unittest.TestCase):
         self.assertIn('self.rate_price_caption = QLabel("Tarifa")', src)
         self.assertIn('self.rate_total_caption = QLabel("Total calculado")', src)
 
-    def test_categories_are_collapsible_and_search_can_expand_context(self) -> None:
-        src = self._read("app/pages/categories.py")
-        self.assertIn("toggle_requested = Signal(int)", src)
-        self.assertIn("self._expanded_ids", src)
-        self.assertIn("expanded = bool(children)", src)
-
     def test_work_week_ui_uses_shared_seven_day_calendar(self) -> None:
         calendar = self._read("app/work_calendar.py")
         self.assertIn("WORK_WEEK_DAYS = 7", calendar)
@@ -119,8 +113,8 @@ class RequestedUiContractsTests(unittest.TestCase):
         trips = self._read("app/pages/viajes_widgets.py")
         self.assertIn("class AnalysisCategoryRow", stats)
         self.assertIn("def showEvent(self, event):", stats)
-        self.assertIn("left_host.setSizePolicy(QSizePolicy.Policy.Ignored", stats)
-        self.assertIn("right_host.setSizePolicy(QSizePolicy.Policy.Ignored", stats)
+        self.assertIn("self._left.setSizePolicy(QSizePolicy.Policy.Ignored", stats)
+        self.assertIn("self._right.setSizePolicy(QSizePolicy.Policy.Ignored", stats)
         self.assertIn("self.value.setWordWrap(False)", trips)
 
     def test_smoke_test_expects_seven_day_work_views(self) -> None:

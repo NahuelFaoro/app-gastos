@@ -1781,6 +1781,24 @@ def build_stylesheet(theme: str = "light", scale: float = 1.0) -> str:
         border: 1px solid {border_soft};
         border-radius: 15px;
     }}
+    QFrame#CategoryFolderTile {{
+        background: {panel};
+        border: 1px solid {border_soft};
+        border-radius: 18px;
+    }}
+    QFrame#CategoryFolderTile:hover, QFrame#CategoryFolderTile:focus {{
+        background: {hover};
+        border-color: {accent};
+    }}
+    QFrame#CategoryFolderTile[dropTarget="true"] {{
+        background: {accent_soft};
+        border: 2px solid {accent};
+    }}
+    QFrame#CategoryFolderIcon {{
+        background: {panel2};
+        border: 1px solid {border_soft};
+        border-radius: 18px;
+    }}
     QFrame#CategoryTreeRow {{
         background: transparent;
         border: 1px solid transparent;

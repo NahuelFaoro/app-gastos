@@ -733,7 +733,7 @@ class ExtraDialog(BaseWorkDialog):
 
         self.orders = QSpinBox()
         self.orders.setRange(0, 999)
-        self.orders.setSpecialValueText("Sin especificar")
+        self.orders.setToolTip("Ingresá la cantidad. Usá 0 si no querés especificarla.")
         self.orders.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
 
         self.amount = MoneyEdit(db.currency_symbol())

@@ -1,4 +1,4 @@
-# Mapa rápido del proyecto — v0.39.19
+# Mapa rápido del proyecto — v0.39.20
 
 ## Quiero cambiar…
 
@@ -12,7 +12,7 @@
 | Semana de Viajes/Extras/KM | `app/work_calendar.py` |
 | Diálogos compartidos | `app/dialog_modules/` (fachada `app/dialogs.py`) |
 | Cuentas / tarjetas | `app/repositories/accounts.py` + UI correspondiente |
-| Categorías / jerarquía | `app/pages/categories.py` + `app/repositories/categories.py` |
+| Categorías / jerarquía | `app/pages/categories.py` + `app/pages/category_tiles.py` + `app/repositories/categories.py` |
 | Movimientos | `app/pages/transactions.py` + `app/repositories/transactions.py` |
 | Análisis | `app/pages/statistics.py` + `app/repositories/analytics.py` |
 | Cuotas | `app/pages/installments.py` + `app/repositories/installments.py` |

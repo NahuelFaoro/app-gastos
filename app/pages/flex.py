@@ -5,7 +5,7 @@ from datetime import date, timedelta
 from PySide6.QtCore import QDate, Qt, Signal
 from PySide6.QtWidgets import (
     QBoxLayout, QDialog, QFrame, QGridLayout, QHBoxLayout, QLabel,
-    QLineEdit, QMessageBox, QPushButton, QScrollArea, QVBoxLayout, QWidget,
+    QLineEdit, QMessageBox, QPushButton, QScrollArea, QSizePolicy, QVBoxLayout, QWidget,
 )
 
 try:
@@ -54,14 +54,17 @@ class FlexZoneCard(QFrame):
         badge = IconBadge("pin", zone.get("color") or "#4CCFA9", 42)
         top.addWidget(badge)
         titlebox = QVBoxLayout(); titlebox.setSpacing(1)
-        name = QLabel(zone.get("name") or "Zona"); name.setObjectName("FlexZoneName"); name.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        name = QLabel(zone.get("name") or "Zona"); name.setWordWrap(True); name.setObjectName("FlexZoneName"); name.setAlignment(Qt.AlignmentFlag.AlignCenter)
         rate = QLabel(f"Tarifa actual · {money(zone.get('current_price') or 0, symbol, self.hidden)}")
         rate.setObjectName("SmallMuted"); rate.setAlignment(Qt.AlignmentFlag.AlignCenter)
         titlebox.addWidget(name); titlebox.addWidget(rate)
         top.addLayout(titlebox, 1)
+        mirror = QWidget(); mirror.setFixedWidth(42)
+        top.addWidget(mirror)
         root.addLayout(top)
 
         middle = QHBoxLayout()
+        middle.setSpacing(16)
         countbox = QVBoxLayout(); countbox.setSpacing(0)
         count = QLabel(str(int(zone.get("quantity") or 0))); count.setObjectName("FlexZoneCount"); count.setAlignment(Qt.AlignmentFlag.AlignCenter)
         item_plural = str(zone.get("item_plural") or "envíos")
@@ -75,7 +78,11 @@ class FlexZoneCard(QFrame):
         subtotal.setAlignment(Qt.AlignmentFlag.AlignCenter)
         subcap = QLabel("subtotal"); subcap.setObjectName("SmallMuted"); subcap.setAlignment(Qt.AlignmentFlag.AlignCenter)
         subtotalbox.addWidget(subtotal); subtotalbox.addWidget(subcap)
-        middle.addLayout(subtotalbox)
+        middle.addLayout(subtotalbox, 1)
+        for label in (count, countcap, subtotal, subcap, rate):
+            label.setWordWrap(True)
+            label.setMinimumWidth(0)
+            label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         root.addLayout(middle)
 
         actions = QHBoxLayout(); actions.setSpacing(8)
@@ -525,7 +532,8 @@ class FlexToolPage(QWidget):
     def _apply_responsive(self):
         mode = responsive_mode(self.width(), self.height())
         compact = mode != "wide"
-        changed = compact != self._compact
+        changed = mode != getattr(self, "_layout_mode", None)
+        self._layout_mode = mode
         self._compact = compact
         direction = QBoxLayout.Direction.TopToBottom if compact else QBoxLayout.Direction.LeftToRight
         self.top_layout.setDirection(direction)
@@ -604,8 +612,8 @@ class FlexToolPage(QWidget):
             card.remove_requested.connect(self.remove_delivery)
             self._zone_cards.append(card)
             self.zone_grid.addWidget(card, i // cols, i % cols)
-        for c in range(cols):
-            self.zone_grid.setColumnStretch(c, 1)
+        for c in range(max(cols, self.zone_grid.columnCount())):
+            self.zone_grid.setColumnStretch(c, 1 if c < cols else 0)
         if not cards:
             empty = QLabel("No hay zonas activas. Entrá en Configurar zonas para agregar una."); empty.setObjectName("Muted")
             self.zone_grid.addWidget(empty, 0, 0)

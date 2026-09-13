@@ -81,56 +81,58 @@ class AnalysisCategoryRow(AnalysisDrillRow):
         open_button.setToolTip("Ver desglose")
         open_button.clicked.connect(lambda: self.activated.emit(self.category_id))
 
-        if narrow:
-            self._build_narrow(badge, name, percent, amount, open_button)
-        else:
-            self._build_wide(badge, name, percent, amount, open_button)
-
-    def _build_narrow(self, badge, name, percent, amount, open_button) -> None:
-        outer = QVBoxLayout(self)
-        outer.setContentsMargins(14, 12, 14, 12)
-        outer.setSpacing(8)
-        top_line = QHBoxLayout()
-        top_line.setSpacing(10)
-        top_line.addWidget(badge)
-        top_line.addWidget(name, 1)
-        top_line.addWidget(open_button)
-        values_line = QHBoxLayout()
-        values_line.addWidget(percent, 1)
-        values_line.addWidget(amount, 1)
-        outer.addLayout(top_line)
-        outer.addLayout(values_line)
-
-    def _build_wide(self, badge, name, percent, amount, open_button) -> None:
-        self.setMinimumHeight(68)
-        self.setMaximumHeight(76)
-        grid = QGridLayout(self)
-        grid.setContentsMargins(16, 8, 14, 8)
-        grid.setHorizontalSpacing(18)
-
-        left_host = QWidget()
-        left = QHBoxLayout(left_host)
+        self._row_mode = None
+        self._badge, self._name = badge, name
+        self._percent, self._amount, self._open = percent, amount, open_button
+        self._grid = QGridLayout(self)
+        self._grid.setContentsMargins(16, 10, 16, 10)
+        self._grid.setHorizontalSpacing(12)
+        self._left = QWidget()
+        left = QHBoxLayout(self._left)
         left.setContentsMargins(0, 0, 0, 0)
-        left.setSpacing(11)
-        left.addWidget(badge, 0, Qt.AlignmentFlag.AlignVCenter)
-        left.addWidget(name, 1, Qt.AlignmentFlag.AlignVCenter)
-        left_host.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
-
-        right_host = QWidget()
-        right = QHBoxLayout(right_host)
+        left.addWidget(badge)
+        left.addWidget(name, 1)
+        self._left.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        self._right = QWidget()
+        right = QHBoxLayout(self._right)
         right.setContentsMargins(0, 0, 0, 0)
-        right.setSpacing(10)
-        right.addStretch(1)
-        right.addWidget(amount, 0, Qt.AlignmentFlag.AlignVCenter)
-        right.addWidget(open_button, 0, Qt.AlignmentFlag.AlignVCenter)
-        right_host.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        right.addStretch()
+        right.addWidget(amount)
+        right.addWidget(open_button)
+        self._right.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        self._arrange_row()
 
-        grid.addWidget(left_host, 0, 0, Qt.AlignmentFlag.AlignVCenter)
-        grid.addWidget(percent, 0, 1, Qt.AlignmentFlag.AlignCenter)
-        grid.addWidget(right_host, 0, 2, Qt.AlignmentFlag.AlignVCenter)
-        grid.setColumnStretch(0, 1)
-        grid.setColumnStretch(1, 0)
-        grid.setColumnStretch(2, 1)
+    def _arrange_row(self) -> None:
+        # El ancho real de la tarjeta decide su layout, incluso al mostrarse
+        # después de haber sido construida dentro de una página oculta.
+        narrow = responsive_mode(self.width()) == "narrow"
+        if narrow == self._row_mode:
+            return
+        self._row_mode = narrow
+        grid = self._grid
+        for widget in (self._left, self._percent, self._right):
+            grid.removeWidget(widget)
+        self._name.setWordWrap(True)
+        for col in range(3):
+            grid.setColumnStretch(col, 0)
+        if narrow:
+            grid.addWidget(self._left, 0, 0, 1, 3)
+            grid.addWidget(self._percent, 1, 0, Qt.AlignmentFlag.AlignLeft)
+            grid.addWidget(self._right, 1, 1, 1, 2)
+            grid.setColumnStretch(1, 1)
+            self._amount.setFixedWidth(min(self.AMOUNT_WIDTH, max(130, self.width() - 180)))
+        else:
+            self._amount.setFixedWidth(self.AMOUNT_WIDTH)
+            grid.addWidget(self._left, 0, 0)
+            grid.addWidget(self._percent, 0, 1, Qt.AlignmentFlag.AlignCenter)
+            grid.addWidget(self._right, 0, 2)
+            grid.setColumnStretch(0, 1)
+            grid.setColumnStretch(2, 1)
+        self.setFixedHeight(max(112 if narrow else 76, self.fontMetrics().height() * (6 if narrow else 4)))
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._arrange_row()
 
 
 class CategoryBreakdownDialog(QDialog):
