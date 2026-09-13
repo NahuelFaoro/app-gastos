@@ -1,4 +1,4 @@
-# Arquitectura — App Gastos v0.39.21
+# Arquitectura — App Gastos v0.39.22
 
 Las reglas permanentes de calidad están en `docs/ENGINEERING_GUIDELINES.md` y el contrato visual en `docs/RESPONSIVE_UI.md`.
 

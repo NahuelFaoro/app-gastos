@@ -81,9 +81,11 @@ class HistoryRepositoryMixin:
         return int(cur.lastrowid)
 
     def _link_existing_history_categories(self, con: sqlite3.Connection) -> int:
-        """Hace visibles como categorías reales los datos importados por versiones anteriores."""
+        """Vincula históricos pendientes sin deshacer categorías movidas o renombradas."""
         rows = con.execute(
-            "SELECT id,kind,category_name,subcategory_name,category_id FROM historical_monthly ORDER BY id"
+            "SELECT h.id,h.kind,h.category_name,h.subcategory_name,h.category_id "
+            "FROM historical_monthly h LEFT JOIN categories c ON c.id=h.category_id "
+            "WHERE c.id IS NULL ORDER BY h.id"
         ).fetchall()
         linked = 0
         for row in rows:

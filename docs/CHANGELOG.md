@@ -1,3 +1,9 @@
+# v0.39.22 — Conservar categorías al reorganizar el historial
+
+- La vinculación del historial sólo resuelve registros sin una categoría existente. Respeta los IDs ya vinculados aunque cambien su nombre o carpeta, evitando recrear la estructura anterior al iniciar.
+- Regresiones de reapertura, migración de históricos pendientes y unicidad de la fila movida mediante ↑.
+- Las categorías homónimas existentes no se fusionan automáticamente: pueden representar datos distintos.
+
 # v0.39.21 — Jerarquías visibles y movimiento directo
 
 - Sustituye la navegación entre carpetas por paneles desplegables en la misma pantalla. Las categorías principales muestran inicialmente sus hijos directos.

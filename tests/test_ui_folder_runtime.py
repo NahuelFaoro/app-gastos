@@ -123,10 +123,13 @@ class RequestedUiRuntimeTests(unittest.TestCase):
             self.assertEqual(page.scroll.horizontalScrollBar().maximum(), 0)
             self.capture(page, f"categories-inline-{width}")
         # Sacar un nivel mediante el botón visible, sin navegar.
+        category_count = len(self.db.categories())
         QTest.mouseClick(panel.rows[leaf].lift_button, Qt.MouseButton.LeftButton)
         self.app.processEvents()
         self.assertEqual(self.db.category(leaf)["parent_id"], parent["id"])
         self.assertEqual(self.db.transaction(tx)["category_id"], leaf)
+        self.assertEqual(len(self.db.categories()), category_count)
+        self.assertEqual(sum(leaf in p.rows for p in page._tiles), 1)
         panel = next(panel for panel in page._tiles if child in panel.rows)
         target = panel.rows[child]
         mime = QMimeData(); mime.setData(MIME_CATEGORY, str(leaf).encode())
