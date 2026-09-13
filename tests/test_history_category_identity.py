@@ -43,6 +43,9 @@ class HistoryCategoryIdentityTests(unittest.TestCase):
 
     def test_unlinked_legacy_history_is_still_linked_once(self):
         history_id = self.add_history()
+        # Simula una base anterior a la migración versionada.
+        with self.db.connect() as con:
+            con.execute("DELETE FROM data_migrations")
         self.db.initialize()
         with self.db.connect() as con:
             category_id = con.execute("SELECT category_id FROM historical_monthly WHERE id=?", (history_id,)).fetchone()[0]
@@ -50,3 +53,14 @@ class HistoryCategoryIdentityTests(unittest.TestCase):
         before = len(self.db.categories())
         self.db.initialize()
         self.assertEqual(len(self.db.categories()), before)
+
+    def test_startup_does_not_repeat_import_linking(self):
+        history_id = self.add_history()
+        before = len(self.db.categories())
+        self.db.initialize()
+        self.assertEqual(len(self.db.categories()), before)
+        with self.db.connect() as con:
+            self.assertIsNone(con.execute("SELECT category_id FROM historical_monthly WHERE id=?", (history_id,)).fetchone()[0])
+        self.db.sync_legacy_categories({})
+        with self.db.connect() as con:
+            self.assertIsNotNone(con.execute("SELECT category_id FROM historical_monthly WHERE id=?", (history_id,)).fetchone()[0])

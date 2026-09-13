@@ -89,7 +89,7 @@ class Database(AccountsMixin, InstallmentsMixin, TransactionsMixin, AnalyticsMix
             self._seed_flex_defaults(con)
             self._ensure_default_settings(con)
             self._run_work_tracking_migrations(con)
-            self._link_existing_history_categories(con)
+            self._migrate_legacy_history_once(con)
             self._reload_settings_cache(con)
             con.execute("PRAGMA optimize")
 

@@ -155,13 +155,17 @@ class CategoryRepositoryMixin:
                 placeholders = ",".join("?" for _ in descendants)
                 con.execute(f"UPDATE categories SET kind=? WHERE id IN ({placeholders})", [kind, *sorted(descendants)])
 
-    def move_category(self, category_id: int, new_parent_id: int | None) -> None:
+    def move_category(self, category_id: int, new_parent_id: int | None, *,
+                      cleanup_empty_duplicates: bool = True,
+                      expected_parent: int | None | str = "unchecked") -> None:
         """Mueve un nodo existente sin copiarlo ni alterar sus movimientos.
 
         Si una build anterior dejó, dentro del destino, una copia *vacía* con
         el mismo nombre, se elimina esa copia antes de mover el nodo real. Esto
         permite reparar de forma segura el bug histórico de drag & drop sin
-        borrar categorías que tengan datos o subcategorías.
+        borrar categorías que tengan datos o subcategorías. La interfaz reversible
+        desactiva esa limpieza para que mover/deshacer sólo cambie parent_id.
+        expected_parent permite rechazar una vista obsoleta dentro de la transacción.
         """
         category_id = int(category_id)
         parent_id = int(new_parent_id) if new_parent_id is not None else None
@@ -173,12 +177,15 @@ class CategoryRepositoryMixin:
             raise ValueError("No podés mover una categoría dentro de una de sus propias subcategorías.")
 
         with self.connect() as con:
+            con.execute("BEGIN IMMEDIATE")
             source = con.execute(
                 "SELECT id,name,kind,parent_id FROM categories WHERE id=?",
                 (category_id,),
             ).fetchone()
             if not source:
                 raise ValueError("La categoría ya no existe.")
+            if expected_parent != "unchecked" and source["parent_id"] != expected_parent:
+                raise ValueError("La categoría cambió de ubicación. Actualizá la vista antes de volver a moverla.")
 
             if parent_id is not None:
                 target = con.execute("SELECT id,kind FROM categories WHERE id=?", (parent_id,)).fetchone()
@@ -193,7 +200,7 @@ class CategoryRepositoryMixin:
                     (parent_id, source["kind"], category_id),
                 ).fetchall()
                 normalized = str(source["name"] or "").strip().casefold()
-                duplicates = [row for row in candidates if str(row["name"] or "").strip().casefold() == normalized]
+                duplicates = [row for row in candidates if cleanup_empty_duplicates and str(row["name"] or "").strip().casefold() == normalized]
 
                 # Primero validamos todos; si alguno tiene contenido no tocamos nada.
                 checks = (

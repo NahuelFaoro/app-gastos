@@ -39,6 +39,7 @@ class CategoriesPage(QWidget):
         self.current_kind = "expense"
         self._mode = None
         self._move_in_progress = False
+        self._last_move = None
         self._expanded_ids = set()
         self._known_roots = set()
         self._tiles = []
@@ -99,6 +100,19 @@ class CategoriesPage(QWidget):
         navigation.addWidget(self.home_button)
         navigation.addWidget(self.path_label, 1)
         root.addLayout(navigation)
+
+        self.move_notice = QFrame()
+        notice_layout = QHBoxLayout(self.move_notice)
+        notice_layout.setContentsMargins(8, 4, 8, 4)
+        self.move_message = QLabel()
+        self.move_message.setWordWrap(True)
+        self.undo_button = QPushButton("Deshacer")
+        self.undo_button.setObjectName("SecondaryButton")
+        self.undo_button.clicked.connect(self.undo_move)
+        notice_layout.addWidget(self.move_message, 1)
+        notice_layout.addWidget(self.undo_button)
+        self.move_notice.hide()
+        root.addWidget(self.move_notice)
 
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
@@ -235,6 +249,10 @@ class CategoriesPage(QWidget):
                         break
                     visible_ids.add(cid)
                     current = by_id.get(current.get("parent_id"))
+        for row in rows:
+            parent = by_id.get(row.get("parent_id"))
+            destination = by_id.get(parent.get("parent_id")) if parent else None
+            row["lift_destination"] = str(destination.get("path") or destination["name"]) if destination else "categorías principales"
         self.counter.setText(f"{len(rows)} categorías")
         self.host.setUpdatesEnabled(False)
         try:
@@ -313,17 +331,50 @@ class CategoriesPage(QWidget):
             QMessageBox.warning(self, "Mover categoría", "Sólo podés mover categorías dentro del mismo tipo.")
             return
 
+        previous_parent = source.get("parent_id")
+        destination = int(target_id) if target_id else None
+        if previous_parent == destination:
+            return
         self._move_in_progress = True
         try:
-            self.db.move_category(int(source_id), int(target_id) if target_id else None)
+            self.db.move_category(int(source_id), destination,
+                                  cleanup_empty_duplicates=False, expected_parent=previous_parent)
         except Exception as exc:
             QMessageBox.warning(self, "Mover categoría", str(exc))
             return
         finally:
             self._move_in_progress = False
 
+        self._last_move = (int(source_id), previous_parent, destination)
+        if destination is not None:
+            self._expanded_ids.add(destination)
         self.refresh()
         self.data_changed.emit()
+        target_name = str(target.get("path") or target["name"]) if target else "categorías principales"
+        self.move_message.setText(f"{source['name']} se movió a {target_name}.")
+        self.undo_button.show()
+        self.move_notice.show()
+
+    def undo_move(self):
+        if self._last_move is None:
+            return
+        source_id, previous_parent, destination = self._last_move
+        try:
+            self.db.move_category(source_id, previous_parent,
+                                  cleanup_empty_duplicates=False, expected_parent=destination)
+        except Exception as exc:
+            self.move_message.setText(f"No se pudo deshacer: {exc}")
+            self._last_move = None
+            self.undo_button.hide()
+            self.refresh()
+            return
+        self._last_move = None
+        if previous_parent is not None:
+            self._expanded_ids.add(previous_parent)
+        self.refresh()
+        self.data_changed.emit()
+        self.move_message.setText("Movimiento deshecho. La categoría volvió a su ubicación anterior.")
+        self.undo_button.hide()
 
     def delete_category(self, category_id=None):
         if not category_id:

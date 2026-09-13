@@ -1,6 +1,6 @@
 """Paneles jerárquicos desplegables en una misma pantalla."""
 from PySide6.QtCore import Qt, Signal, QPoint, QMimeData
-from PySide6.QtGui import QDrag
+from PySide6.QtGui import QDrag, QPainter, QPen, QPalette
 from PySide6.QtWidgets import QApplication, QFrame, QGridLayout, QHBoxLayout, QLabel, QMenu, QPushButton, QSizePolicy, QVBoxLayout
 
 from ..widgets import IconBadge
@@ -59,6 +59,8 @@ class CategoryTile(QFrame):
         super().__init__(parent)
         self.cid = int(category["id"])
         self.has_children = bool(children)
+        self.depth = 0
+        self.lift_destination = category.get("lift_destination", "categorías principales")
         self.setObjectName("CategoryTreeRow")
         self.setAcceptDrops(True)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
@@ -98,8 +100,8 @@ class CategoryTile(QFrame):
             self.lift_button = QPushButton("↑")
             self.lift_button.setObjectName("GhostButton")
             self.lift_button.setFixedSize(30, 30)
-            self.lift_button.setToolTip("Sacar un nivel: mover junto a su categoría contenedora")
-            self.lift_button.setAccessibleName(f"Sacar {category.get('name')} un nivel")
+            self.lift_button.setToolTip(f"Mover a {self.lift_destination}")
+            self.lift_button.setAccessibleName(f"Mover {category.get('name')} a {self.lift_destination}")
             self.lift_button.clicked.connect(lambda: self.lift_requested.emit(self.cid))
             root.addWidget(self.lift_button)
         menu = QPushButton("⋯")
@@ -108,6 +110,20 @@ class CategoryTile(QFrame):
         menu.setAccessibleName(f"Acciones de {category.get('name')}")
         menu.clicked.connect(lambda: self._menu(menu.mapToGlobal(menu.rect().bottomLeft())))
         root.addWidget(menu)
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        if not self.depth:
+            return
+        painter = QPainter(self)
+        color = self.palette().color(QPalette.ColorRole.Text)
+        color.setAlpha(40)
+        painter.setPen(QPen(color, 1))
+        for level in range(min(self.depth, 4)):
+            x = 21 + level * 22
+            painter.drawLine(x, 0, x, self.height())
+        x = 21 + (min(self.depth, 4) - 1) * 22
+        painter.drawLine(x, self.height() // 2, x + 12, self.height() // 2)
 
     def set_expanded(self, expanded: bool) -> None:
         self.disclosure.setText("▾" if expanded else "▸" if self.has_children else "")
@@ -119,7 +135,7 @@ class CategoryTile(QFrame):
                    ("Agregar subcategoría", self.add_child_requested),
                    ("Duplicar", self.duplicate_requested), ("Eliminar", self.delete_requested)]
         if self.lift_button is not None:
-            actions.insert(1, ("Sacar un nivel", self.lift_requested))
+            actions.insert(1, (f"Mover a {self.lift_destination}", self.lift_requested))
         mapping = {menu.addAction(text): signal for text, signal in actions}
         action = menu.exec(position)
         if action in mapping:
@@ -210,7 +226,8 @@ class CategoryPanel(QFrame):
             row = CategoryTile(item, children)
             # Todos los niveles tienen la misma columna de iconos, más una
             # sangría por ascendiente. Nunca desaparece el espacio del indicador.
-            row.layout().setContentsMargins(8 + min(depth, 4) * 18, 8, 8, 8)
+            row.depth = depth
+            row.layout().setContentsMargins(8 + min(depth, 4) * 22, 8, 8, 8)
             row.opened.connect(self.toggle)
             connect_row(row)
             layout.addWidget(row)

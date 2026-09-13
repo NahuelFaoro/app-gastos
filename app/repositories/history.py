@@ -11,6 +11,15 @@ from ..constants import CATEGORY_COLORS, CATEGORY_ICON_BY_NAME
 class HistoryRepositoryMixin:
     """Importación histórica y reconciliación de categorías del Excel legado."""
 
+    def _migrate_legacy_history_once(self, con: sqlite3.Connection) -> None:
+        """Adaptación única de bases antiguas; las importaciones son explícitas."""
+        con.execute("CREATE TABLE IF NOT EXISTS data_migrations (name TEXT PRIMARY KEY)")
+        name = "legacy_history_category_links_v1"
+        if con.execute("SELECT 1 FROM data_migrations WHERE name=?", (name,)).fetchone():
+            return
+        self._link_existing_history_categories(con)
+        con.execute("INSERT INTO data_migrations(name) VALUES(?)", (name,))
+
     @staticmethod
     def _norm_name(value: str) -> str:
         text = unicodedata.normalize("NFKD", str(value or ""))

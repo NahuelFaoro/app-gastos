@@ -1,3 +1,11 @@
+# v0.39.23 — Jerarquías claras y movimientos reversibles
+
+- Guías visuales y sangría de 22 px por nivel (hasta cuatro niveles para conservar espacio en ventanas angostas).
+- Flecha y menú indican la ruta de destino; aviso persistente con Deshacer para el último movimiento mediante flecha o arrastre.
+- Movimiento reversible conserva categorías homónimas existentes; la limpieza histórica de copias vacías queda separada de esta interacción.
+- Verificación transaccional de ubicación antes de mover o deshacer para no sobrescribir cambios posteriores.
+- Registro de migración única para vincular históricos antiguos al abrir una base anterior. El arranque habitual no reconstruye vínculos; la importación explícita sigue resolviendo los pendientes.
+
 # v0.39.22 — Conservar categorías al reorganizar el historial
 
 - La vinculación del historial sólo resuelve registros sin una categoría existente. Respeta los IDs ya vinculados aunque cambien su nombre o carpeta, evitando recrear la estructura anterior al iniciar.
