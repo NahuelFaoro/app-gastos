@@ -293,6 +293,7 @@ class TripCompactCard(QFrame):
         root = QVBoxLayout(self)
         root.setContentsMargins(18, 14, 18, 14)
         root.setSpacing(10)
+        root.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         top = QHBoxLayout()
         client = QLabel(str(trip.get("client") or "Sin cliente"))
@@ -473,7 +474,7 @@ class DayGroupCard(QFrame):
         for column in range(max(self._columns, columns)):
             self.compact_layout.setColumnStretch(column, 1 if column < columns else 0)
         for index, card in enumerate(self._compact_cards):
-            self.compact_layout.addWidget(card, index // columns, index % columns, Qt.AlignmentFlag.AlignTop)
+            self.compact_layout.addWidget(card, index // columns, index % columns)
         self._columns = columns
 
     def clear_selection(self) -> None:
