@@ -3,11 +3,13 @@ import json
 import time
 import uuid
 import sqlite3
+import re
 from contextlib import closing
 from datetime import datetime
 import keyring
 import requests
 from .cloud_bridge import export_cloud, apply_cloud, merge_copies, meta, put_meta, initialize_cloud_ids
+from .constants import APP_VERSION
 
 URL='https://vqngomcfkijfjydzqebz.supabase.co'
 PUBLIC_KEY='sb_publishable_TF3OUJo7PUxawlf6TCYn-A_ghBC3xgp'
@@ -49,11 +51,16 @@ class CloudSync:
         self.session=session
 
     def request(self,path,body=None,authenticated=False):
-        headers={'apikey':PUBLIC_KEY,'Content-Type':'application/json'}
+        headers={'apikey':PUBLIC_KEY,'Content-Type':'application/json','X-Client-Info':'app-gastos-desktop/'+APP_VERSION}
         if authenticated:headers['Authorization']='Bearer '+self.token()
         response=requests.request('GET' if body is None else 'POST',URL+path,json=body,headers=headers,timeout=20,allow_redirects=False)
         if not response.ok:
-            raise ValueError(cloud_error(response))
+            message=cloud_error(response)
+            # Correlate failures with server logs without recording credentials or tokens.
+            reference=response.headers.get('sb-request-id','')
+            if isinstance(reference,str) and re.fullmatch(r'[0-9a-fA-F-]{36}',reference):
+                message+='\nReferencia Desktop '+APP_VERSION+': '+reference
+            raise ValueError(message)
         return response.json() if response.content else None
 
     def login(self,email,password):

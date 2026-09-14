@@ -22,6 +22,7 @@ class CloudSyncPanel(QFrame):
         self.password=QLineEdit();self.password.setPlaceholderText('Contraseña');self.password.setEchoMode(QLineEdit.EchoMode.Password);box.addWidget(self.password)
         self.show_password=QCheckBox('Mostrar contraseña');self.show_password.toggled.connect(lambda visible:self.password.setEchoMode(QLineEdit.EchoMode.Normal if visible else QLineEdit.EchoMode.Password));box.addWidget(self.show_password)
         self.password.returnPressed.connect(self.login)
+        self.login_pending=False
         self.status=QLabel('Sin sesión');self.status.setWordWrap(True);box.addWidget(self.status)
         self.buttons=[]
         for text,fn in [('Iniciar sesión',self.login),('Crear o confirmar cuenta en la app',lambda:QDesktopServices.openUrl(QUrl('https://app-gastos-movil.pages.dev/'))),('Activar sincronización',self.enable),('Sincronizar ahora',lambda:self.run(lambda:self.service.sync())),('Pausar',self.pause),('Cerrar sesión',lambda:self.run(self.service.logout))]:
@@ -45,16 +46,23 @@ class CloudSyncPanel(QFrame):
         self.status.setText('Conectando…');self.job=CloudJob(fn,self);self.job.result.connect(self.done);self.job.finished.connect(self.finished);self.job.start()
 
     def done(self,message,success):
+        if self.login_pending:
+            if success:self.password.clear()
+            self.show_password.setChecked(False)
+            self.login_pending=False
         self.status.setText(message)
         if success:self.data_changed.emit()
 
     def finished(self):
         self.job.deleteLater();self.job=None
+        self.email.setReadOnly(False);self.password.setReadOnly(False)
         for b in self.buttons:b.setEnabled(True)
 
     def login(self):
         if self.job is not None:return
-        email,password=self.email.text().strip(),self.password.text();self.password.clear()
+        email,password=self.email.text().strip(),self.password.text()
+        self.login_pending=True
+        self.email.setReadOnly(True);self.password.setReadOnly(True)
         self.show_password.setChecked(False)
         self.run(lambda:self.service.login(email,password))
 
