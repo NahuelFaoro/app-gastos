@@ -38,17 +38,33 @@ def cloud_error(response):
 
 class CloudSync:
     def __init__(self, db):
-        self.db=db; self.session=None
+        self.db=db; self.session=None; self.session_persistent=False
         self.credential=str(db.path.resolve())
 
     def restore(self):
         value=keyring.get_password('AppGastos.Cloud',self.credential)
         self.session=json.loads(value) if value else None
+        self.session_persistent=bool(self.session)
         return self.session
 
     def _save_session(self, session):
-        keyring.set_password('AppGastos.Cloud',self.credential,json.dumps(session))
+        # Windows limits each credential to 2560 bytes (keyring writes UTF-16).
+        # The full Supabase response includes a JWT and repeated user metadata.
+        # Persist only what is needed to renew it; keep the access token in RAM.
+        saved={'refresh_token':session['refresh_token'],
+               'user':{'id':session['user']['id'],'email':session['user'].get('email','')},
+               'expires_at':0}
         self.session=session
+        self.session_persistent=False
+        try:
+            value=json.dumps(saved,ensure_ascii=False,separators=(',',':'))
+            if len(value.encode('utf-16-le'))>2560:raise ValueError('Credential too large')
+            keyring.set_password('AppGastos.Cloud',self.credential,value)
+            self.session_persistent=True
+        except Exception:
+            # A local vault failure must not undo successful authentication.
+            # Never fall back to storing session secrets in an unencrypted file.
+            pass
 
     def request(self,path,body=None,authenticated=False):
         headers={'apikey':PUBLIC_KEY,'Content-Type':'application/json','X-Client-Info':'app-gastos-desktop/'+APP_VERSION}
@@ -72,7 +88,10 @@ class CloudSync:
         bound=meta(self.db,'user')
         if bound and bound!=session['user']['id']:raise ValueError('Esta base está vinculada a otra cuenta. Usá una base distinta para otro usuario.')
         session['expires_at']=time.time()+session['expires_in'];self._save_session(session)
-        return 'Sesión iniciada: '+email
+        message='Sesión iniciada: '+email
+        if not self.session_persistent:
+            message+=' · Windows no pudo recordar la sesión. Podés usarla ahora; al cerrar la app tendrás que volver a ingresar.'
+        return message
 
     def token(self):
         if not self.session:raise ValueError('Iniciá sesión primero.')

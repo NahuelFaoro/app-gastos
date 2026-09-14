@@ -39,7 +39,7 @@ class CloudLoginPanelTests(unittest.TestCase):
                     self.assertEqual(panel.password.text(),password)
                     self.assertFalse(panel.password.isReadOnly())
                     response.ok=True
-                    response.json.return_value={'user':{'id':'synthetic-user'},'expires_in':3600,'access_token':'synthetic-token'}
+                    response.json.return_value={'user':{'id':'synthetic-user'},'expires_in':3600,'access_token':'synthetic-token','refresh_token':'synthetic-refresh'}
                     QTest.keyClick(panel.password,Qt.Key.Key_Return)
                     self.wait_job(panel)
                     self.assertEqual(request.call_count,2)
