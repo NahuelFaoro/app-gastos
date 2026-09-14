@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from .work_cards import FoldableWorkCard
 from ..constants import MONTHS_SHORT
 from ..layouts import FlowLayout
 from ..utils import money
@@ -276,54 +277,16 @@ class TripCheckBox(QCheckBox):
         painter.end()
 
 
-class TripCompactCard(QFrame):
-    """Registro de viaje, con lectura por bloques y edición directa de checks."""
+class TripCompactCard(FoldableWorkCard):
+    """Detalle de recorrido con casillas editables."""
 
-    expansionChanged = Signal()
-    clicked = Signal(int)
-    doubleClicked = Signal(int)
     fieldChanged = Signal(int, object, bool)
 
     def __init__(self, trip: dict, field_definitions: list[dict], symbol: str, hidden_amounts: bool, parent=None):
-        super().__init__(parent)
-        self.trip_id = int(trip["id"])
-        self.setObjectName("WorkTripCompactCard")
-        self.setProperty("selected", False)
-        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-        root = QVBoxLayout(self)
-        root.setContentsMargins(18, 14, 18, 14)
-        root.setSpacing(10)
-        root.setAlignment(Qt.AlignmentFlag.AlignTop)
-
-        self.header = QFrame()
-        self.header.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.header.installEventFilter(self)
-        top = QHBoxLayout(self.header)
-        top.setContentsMargins(0, 0, 0, 0)
-        self.chevron = QLabel("›")
-        self.chevron.setObjectName("WorkDayChevron")
-        top.addWidget(self.chevron)
-        client = QLabel(str(trip.get("client") or "Sin cliente"))
-        client.setObjectName("TransactionTitle")
-        client.setWordWrap(True)
-        client.setMinimumWidth(0)
-        top.addWidget(client, 1)
-        charged = QLabel("Sin importe" if trip.get("charged") is None else money(trip.get("charged") or 0, symbol, hidden_amounts))
-        charged.setObjectName("SmallMuted" if trip.get("charged") is None else "TransactionAmount")
-        top.addWidget(charged)
-        self.edit_button = QPushButton("Editar")
-        self.edit_button.setObjectName("GhostButton")
-        self.edit_button.setToolTip("Editar este viaje")
-        self.edit_button.clicked.connect(lambda: self.doubleClicked.emit(self.trip_id))
-        top.addWidget(self.edit_button)
-        root.addWidget(self.header)
-        self.details_body = QWidget()
-        detail_layout = QVBoxLayout(self.details_body)
-        detail_layout.setContentsMargins(0, 0, 0, 0)
-        detail_layout.setSpacing(10)
-        root.addWidget(self.details_body)
-
+        amount = "Sin importe" if trip.get("charged") is None else money(trip.get("charged") or 0, symbol, hidden_amounts)
+        super().__init__(int(trip["id"]), str(trip.get("client") or "Sin cliente"), amount, parent)
+        self.trip_id = self.record_id
+        detail_layout = self.detail_layout
         destinations = [str(x) for x in trip.get("destinations") or [] if str(x).strip()]
         count = TripsByDayView.stop_count(trip)
         for caption, value in (
@@ -380,60 +343,6 @@ class TripCompactCard(QFrame):
             details.setWordWrap(True)
             details.setTextFormat(Qt.TextFormat.PlainText)
             detail_layout.addWidget(details)
-        # Las etiquetas dejan pasar el clic al registro; los controles conservan
-        # sus propias acciones, sin seleccionar ni abrir el diálogo al marcar.
-        for label in self.findChildren(QLabel):
-            label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
-
-        self.set_expanded(False)
-
-    def set_expanded(self, expanded: bool) -> None:
-        self._expanded = bool(expanded)
-        self.details_body.setVisible(self._expanded)
-        self.chevron.setText("⌄" if self._expanded else "›")
-        self.header.setToolTip("Ocultar detalle" if self._expanded else "Ver detalle del viaje")
-        self.setSizePolicy(QSizePolicy.Policy.Expanding,
-                           QSizePolicy.Policy.Minimum if self._expanded else QSizePolicy.Policy.Fixed)
-        self.updateGeometry()
-        self.expansionChanged.emit()
-
-    def is_expanded(self) -> bool:
-        return self._expanded
-
-    def eventFilter(self, watched, event):
-        if watched is self.header and event.type() == QEvent.Type.MouseButtonRelease and event.button() == Qt.MouseButton.LeftButton:
-            self.set_expanded(not self._expanded)
-            self.clicked.emit(self.trip_id)
-            return True
-        return super().eventFilter(watched, event)
-
-    def set_selected(self, selected: bool) -> None:
-        self.setProperty("selected", bool(selected))
-        self.style().unpolish(self)
-        self.style().polish(self)
-
-    def mouseReleaseEvent(self, event) -> None:
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.clicked.emit(self.trip_id)
-        super().mouseReleaseEvent(event)
-
-    def mouseDoubleClickEvent(self, event) -> None:
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.doubleClicked.emit(self.trip_id)
-            event.accept()
-            return
-        super().mouseDoubleClickEvent(event)
-
-    def keyPressEvent(self, event) -> None:
-        if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
-            self.set_expanded(not self._expanded)
-            event.accept()
-        elif event.key() == Qt.Key.Key_Space:
-            self.set_expanded(not self._expanded)
-            self.clicked.emit(self.trip_id)
-            event.accept()
-        else:
-            super().keyPressEvent(event)
 
 
 class DayGroupCard(QFrame):

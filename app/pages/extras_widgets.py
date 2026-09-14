@@ -11,14 +11,10 @@ from datetime import date
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
-    QAbstractItemView,
     QFrame,
     QHBoxLayout,
-    QHeaderView,
     QLabel,
     QScrollArea,
-    QTableWidget,
-    QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
@@ -26,233 +22,63 @@ from PySide6.QtWidgets import (
 from ..utils import money
 from ..work_calendar import iter_week_days
 from ..layouts import FlowLayout
-from .viajes_widgets import DayGroupHeader
+from .viajes_widgets import DayGroupCard
+from .work_cards import FoldableWorkCard
 
 
-class ExtraCompactCard(QFrame):
-    """Fila vertical de Extras para monitores angostos."""
-
-    clicked = Signal(int)
-    doubleClicked = Signal(int)
+class ExtraCompactCard(FoldableWorkCard):
+    """Registro de trabajo extra con detalle plegado inicialmente."""
 
     def __init__(self, extra: dict, symbol: str, hidden_amounts: bool, parent=None):
-        super().__init__(parent)
-        self.extra_id = int(extra["id"])
-        self.setObjectName("WorkTripCompactCard")
-        self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.setProperty("selected", False)
-        root = QVBoxLayout(self)
-        root.setContentsMargins(12, 10, 12, 10)
-        root.setSpacing(6)
-
-        top = QHBoxLayout()
-        name = QLabel(str(extra.get("app_name") or "Extra"))
-        name.setObjectName("TransactionTitle")
-        amount = QLabel(money(extra.get("amount") or 0, symbol, hidden_amounts))
-        amount.setObjectName("TransactionAmount")
-        top.addWidget(name, 1)
-        top.addWidget(amount)
-        root.addLayout(top)
-
-        chips_host = QWidget()
-        chips = FlowLayout(chips_host, horizontal_spacing=6, vertical_spacing=5)
+        super().__init__(int(extra["id"]), str(extra.get("app_name") or "Extra"),
+                         money(extra.get("amount") or 0, symbol, hidden_amounts), parent)
+        self.extra_id = self.record_id
         hours = float(extra.get("hours") or 0)
-        orders = int(extra.get("orders") or 0)
-        for value in [
-            (f"{hours:g} h" if hours else ""),
-            (f"{orders} pedidos/viajes" if orders else ""),
-        ]:
-            if value:
-                chip = QLabel(value)
-                chip.setObjectName("WorkDayChip")
-                chips.addWidget(chip)
-        root.addWidget(chips_host)
+        orders = extra.get("orders")
+        for caption, value in (("Horas trabajadas", f"{hours:g} h"),
+                               ("Pedidos / viajes", str(orders) if orders is not None else "Sin especificar")):
+            row = QHBoxLayout()
+            label = QLabel(caption)
+            label.setObjectName("SmallMuted")
+            row.addWidget(label, 1)
+            row.addWidget(QLabel(value))
+            self.detail_layout.addLayout(row)
         if extra.get("details"):
             details = QLabel(str(extra["details"]))
-            details.setObjectName("SmallMuted")
+            details.setTextFormat(Qt.TextFormat.PlainText)
             details.setWordWrap(True)
-            root.addWidget(details)
-
-    def set_selected(self, selected: bool) -> None:
-        self.setProperty("selected", bool(selected))
-        self.style().unpolish(self)
-        self.style().polish(self)
-
-    def mouseReleaseEvent(self, event) -> None:
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.clicked.emit(self.extra_id)
-        super().mouseReleaseEvent(event)
-
-    def mouseDoubleClickEvent(self, event) -> None:
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.doubleClicked.emit(self.extra_id)
-            event.accept()
-            return
-        super().mouseDoubleClickEvent(event)
+            details.setObjectName("SmallMuted")
+            self.detail_layout.addWidget(details)
 
 
-class ExtraDayCard(QFrame):
-    """Jornada plegable de Extras."""
+class ExtraDayCard(DayGroupCard):
+    """Grilla adaptable compartida con las jornadas de Viajes."""
 
     extraSelected = Signal(int)
     extraDoubleClicked = Signal(int)
 
-    COLUMNS = ("Aplicación", "Horas", "Pedidos / viajes", "Ganado", "Detalles")
-
-    def __init__(self, day: date, parent=None):
-        super().__init__(parent)
-        self.day = day
-        self.setObjectName("WorkDayCard")
-        self._expanded = False
-
-        root = QVBoxLayout(self)
-        root.setContentsMargins(0, 0, 0, 0)
-        root.setSpacing(0)
-
-        self.header = DayGroupHeader()
-        self.header.clicked.connect(self.toggle)
-        root.addWidget(self.header)
-
-        self.body = QWidget()
-        body_layout = QVBoxLayout(self.body)
-        body_layout.setContentsMargins(10, 0, 10, 10)
-        body_layout.setSpacing(0)
-
-        self.table = QTableWidget(0, len(self.COLUMNS))
-        self.table.setObjectName("WorkDayTable")
-        self.table.setHorizontalHeaderLabels(list(self.COLUMNS))
-        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
-        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.table.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        self.table.verticalHeader().setVisible(False)
-        self.table.setAlternatingRowColors(False)
-        self.table.setShowGrid(False)
-        self.table.cellClicked.connect(self._selected)
-        self.table.cellDoubleClicked.connect(self._double_clicked)
-
-        header = self.table.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-        header.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
-        header.setStretchLastSection(False)
-        for column in range(len(self.COLUMNS)):
-            item = self.table.horizontalHeaderItem(column)
-            if item is None:
-                continue
-            if column in (1, 2):
-                alignment = Qt.AlignmentFlag.AlignCenter
-            elif column == 3:
-                alignment = Qt.AlignmentFlag.AlignRight
-            else:
-                alignment = Qt.AlignmentFlag.AlignLeft
-            item.setTextAlignment(alignment | Qt.AlignmentFlag.AlignVCenter)
-
-        self.compact_host = QWidget()
-        self.compact_layout = QVBoxLayout(self.compact_host)
-        self.compact_layout.setContentsMargins(0, 4, 0, 0)
-        self.compact_layout.setSpacing(7)
-        self.compact_host.setVisible(False)
-        body_layout.addWidget(self.compact_host)
-        self._compact_cards: list[ExtraCompactCard] = []
-
-        self.empty = QLabel("Sin extras")
-        self.empty.setObjectName("WorkDayEmpty")
-        self.empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.empty.setMinimumHeight(48)
-
-        body_layout.addWidget(self.table)
-        body_layout.addWidget(self.empty)
-        root.addWidget(self.body)
-        self.body.setVisible(False)
-
-    def set_expanded(self, expanded: bool) -> None:
-        self._expanded = bool(expanded)
-        self.body.setVisible(self._expanded)
-        self.header.set_expanded(self._expanded)
-
-    def toggle(self) -> None:
-        self.set_expanded(not self._expanded)
-
-    def is_expanded(self) -> bool:
-        return self._expanded
-
     def set_rows(self, rows: list[dict], symbol: str, hidden_amounts: bool, *, compact: bool = False) -> None:
-        self.table.setRowCount(len(rows))
-        self.empty.setVisible(not rows)
-        self.table.setVisible(bool(rows) and not compact)
-        self.compact_host.setVisible(bool(rows) and compact)
         while self.compact_layout.count():
-            item = self.compact_layout.takeAt(0)
-            widget = item.widget()
+            widget = self.compact_layout.takeAt(0).widget()
             if widget is not None:
+                widget.hide()
                 widget.deleteLater()
         self._compact_cards = []
-
-        for row_index, extra in enumerate(rows):
-            hours = float(extra.get("hours") or 0)
-            orders = int(extra.get("orders") or 0)
-            values = [
-                extra.get("app_name") or "—",
-                (f"{hours:.2f}".rstrip("0").rstrip(".") + " h") if hours else "—",
-                str(orders) if orders else "—",
-                money(extra.get("amount") or 0, symbol, hidden_amounts),
-                extra.get("details") or "—",
-            ]
-            for column, value in enumerate(values):
-                item = QTableWidgetItem(str(value))
-                if column == 0:
-                    item.setData(Qt.ItemDataRole.UserRole, int(extra["id"]))
-                if column in (1, 2):
-                    item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-                elif column == 3:
-                    item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-                self.table.setItem(row_index, column, item)
+        for extra in rows:
             card = ExtraCompactCard(extra, symbol, hidden_amounts)
             card.clicked.connect(self.extraSelected.emit)
             card.doubleClicked.connect(self.extraDoubleClicked.emit)
-            self.compact_layout.addWidget(card)
+            card.expansionChanged.connect(self._arrange_cards)
             self._compact_cards.append(card)
-
-        self.table.resizeRowsToContents()
-        if rows and not compact:
-            desired = self.table.horizontalHeader().height() + sum(
-                self.table.rowHeight(row) for row in range(self.table.rowCount())
-            ) + 8
-            height = min(360, max(92, desired))
-            self.table.setMinimumHeight(height)
-            self.table.setMaximumHeight(height)
-        elif compact:
-            self.table.setMinimumHeight(0)
-            self.table.setMaximumHeight(0)
-
-    def clear_selection(self) -> None:
-        self.table.clearSelection()
-        self.table.setCurrentCell(-1, -1)
-        for card in self._compact_cards:
-            card.set_selected(False)
+        if not rows:
+            empty = QLabel("Sin extras")
+            empty.setObjectName("WorkDayEmpty")
+            self.compact_layout.addWidget(empty, 0, 0)
+        self._arrange_cards()
 
     def select_extra(self, extra_id: int) -> None:
         for card in self._compact_cards:
             card.set_selected(card.extra_id == int(extra_id))
-
-    def _extra_id_for_row(self, row: int) -> int | None:
-        item = self.table.item(row, 0)
-        if item is None:
-            return None
-        try:
-            return int(item.data(Qt.ItemDataRole.UserRole))
-        except (TypeError, ValueError):
-            return None
-
-    def _selected(self, row: int, _column: int) -> None:
-        extra_id = self._extra_id_for_row(row)
-        if extra_id is not None:
-            self.extraSelected.emit(extra_id)
-
-    def _double_clicked(self, row: int, _column: int) -> None:
-        extra_id = self._extra_id_for_row(row)
-        if extra_id is not None:
-            self.extraDoubleClicked.emit(extra_id)
 
 
 class ExtrasByDayView(QWidget):
@@ -266,6 +92,7 @@ class ExtrasByDayView(QWidget):
         self._cards: dict[str, ExtraDayCard] = {}
         self._selected_extra_id: int | None = None
         self._has_populated = False
+        self._expanded_records: set[int] = set()
         self._compact = False
 
         root = QVBoxLayout(self)
@@ -290,6 +117,12 @@ class ExtrasByDayView(QWidget):
 
     def populate(self, week_start: date, rows: list[dict], symbol: str, hidden_amounts: bool) -> None:
         expanded_days = {key for key, card in self._cards.items() if card.is_expanded()}
+        for day_card in self._cards.values():
+            for record in day_card._compact_cards:
+                if record.is_expanded():
+                    self._expanded_records.add(record.extra_id)
+                else:
+                    self._expanded_records.discard(record.extra_id)
         self._selected_extra_id = None
         self.selectionChanged.emit(None)
 
@@ -297,6 +130,7 @@ class ExtrasByDayView(QWidget):
             item = self.host_layout.takeAt(0)
             widget = item.widget()
             if widget is not None:
+                widget.hide()
                 widget.deleteLater()
         self._cards = {}
 
@@ -327,6 +161,8 @@ class ExtrasByDayView(QWidget):
             card.header.set_chip_texts(custom_values)
 
             card.set_rows(day_rows, symbol, hidden_amounts, compact=self._compact)
+            for record in card._compact_cards:
+                record.set_expanded(record.extra_id in self._expanded_records)
             card.extraSelected.connect(lambda extra_id, source=card: self._select_extra(source, extra_id))
             card.extraDoubleClicked.connect(self.extraDoubleClicked.emit)
             card.set_expanded(day_iso in expanded_days if self._has_populated else False)

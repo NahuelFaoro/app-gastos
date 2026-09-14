@@ -79,6 +79,47 @@ class TripCardsTests(unittest.TestCase):
         self.page.refresh_trips()
         self.assertFalse(self.day()._compact_cards[0].is_expanded())
 
+    def test_extras_fold_edit_and_keep_open_after_refresh(self):
+        extra_id = self.db.add_work_extra({"app_name": "Cabify", "work_date": "2026-09-07",
+                                           "hours": 2, "orders": 4, "amount": 12000, "details": "Comentario"})
+        self.page.refresh_extras()
+        self.page.tabs.setCurrentIndex(1)
+        self.assertTrue(self.page.stats_host.isHidden())
+        view = self.page.extras_view
+        day = view._cards["2026-09-07"]
+        day.set_expanded(True)
+        card = day._compact_cards[0]
+        self.assertFalse(card.is_expanded())
+        QTest.mouseClick(card.header, Qt.MouseButton.LeftButton)
+        self.assertTrue(card.is_expanded())
+        self.assertEqual(view.selected_extra_id(), extra_id)
+        self.page.refresh_extras()
+        card = view._cards["2026-09-07"]._compact_cards[0]
+        self.assertTrue(card.is_expanded())
+        self.assertEqual(view.findChildren(QTableWidget), [])
+        view.extraDoubleClicked.disconnect()
+        edited = []
+        view.extraDoubleClicked.connect(edited.append)
+        card.edit_button.click()
+        self.assertEqual(edited, [extra_id])
+        self.page.tabs.setCurrentIndex(0)
+        self.assertFalse(self.page.stats_host.isHidden())
+
+    def test_flex_add_keeps_zone_open(self):
+        from app.pages.flex import FlexToolPage
+        from PySide6.QtWidgets import QPushButton
+        page = FlexToolPage(self.db)
+        card = page._zone_cards[0]
+        zone_id = card.zone_id
+        self.assertFalse(card.is_expanded())
+        QTest.mouseClick(card.header, Qt.MouseButton.LeftButton)
+        before = self.db.flex_week_summary(page.current_week.isoformat())["quantity"]
+        card.findChild(QPushButton, "FlexAddButton").click()
+        self.assertEqual(self.db.flex_week_summary(page.current_week.isoformat())["quantity"], before + 1)
+        self.assertTrue(next(c for c in page._zone_cards if c.zone_id == zone_id).is_expanded())
+        page.close()
+        page.deleteLater()
+
     def test_card_actions_and_single_scroll(self):
         view = self.page.trips_tree
         self.assertEqual(len(view.findChildren(QScrollArea)), 1)

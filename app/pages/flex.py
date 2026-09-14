@@ -22,6 +22,7 @@ from ..widgets import IconBadge, MoneyEdit, SlideSwitch, StatCard
 from ..work_calendar import full_week_label, week_end, week_start
 from .common import clear_layout, page_header, scroll_container
 from ..date_picker import WorkDateEdit
+from .work_cards import FoldableWorkCard
 
 
 
@@ -32,37 +33,22 @@ week_label = full_week_label
 
 
 
-class FlexZoneCard(QFrame):
+class FlexZoneCard(FoldableWorkCard):
     add_requested = Signal(int)
     remove_requested = Signal(int)
 
     def __init__(self, zone: dict, symbol: str, hidden: bool = False, parent=None):
-        super().__init__(parent)
+        super().__init__(int(zone["id"]), str(zone.get("name") or "Zona"),
+                         money(zone.get("total") or 0, symbol, hidden), parent)
         self.zone = zone
-        self.zone_id = int(zone["id"])
+        self.zone_id = self.record_id
         self.symbol = symbol
         self.hidden = bool(hidden)
-        self.setObjectName("FlexZoneCard")
-        self.setMinimumHeight(190)
-
-        root = QVBoxLayout(self)
-        root.setContentsMargins(18, 16, 18, 16)
-        root.setSpacing(10)
-
-        self.top_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight)
-        top = self.top_layout
-        badge = IconBadge("pin", zone.get("color") or "#4CCFA9", 42)
-        top.addWidget(badge)
-        titlebox = QVBoxLayout(); titlebox.setSpacing(1)
-        name = QLabel(zone.get("name") or "Zona"); name.setWordWrap(True); name.setObjectName("FlexZoneName"); name.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        rate = QLabel(f"Tarifa actual · {money(zone.get('current_price') or 0, symbol, self.hidden)}")
-        rate.setObjectName("SmallMuted"); rate.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        titlebox.addWidget(name); titlebox.addWidget(rate)
-        top.addLayout(titlebox, 1)
-        mirror = QWidget(); mirror.setFixedWidth(42)
-        top.addWidget(mirror)
-        root.addLayout(top)
-
+        self.edit_button.hide()
+        root = self.detail_layout
+        rate = QLabel(f"Tarifa actual · {money(zone.get('current_price') or 0, symbol, hidden)}")
+        rate.setObjectName("SmallMuted")
+        root.addWidget(rate)
         middle = QHBoxLayout()
         middle.setSpacing(16)
         countbox = QVBoxLayout(); countbox.setSpacing(0)
@@ -590,6 +576,9 @@ class FlexToolPage(QWidget):
         self.total_amount.set_value(money(summary["total"], symbol, self.db.balances_hidden()), "facturación calculada")
         self.average.set_value(money(summary["average"], symbol, self.db.balances_hidden()), f"por {self.item_singular}" if summary["quantity"] else f"sin {self.item_plural}")
 
+        expanded_zones = {card.zone_id for card in self._zone_cards if card.is_expanded()}
+        for old_card in self._zone_cards:
+            old_card.hide()
         clear_layout(self.zone_grid)
         zones_for_rate = {int(z["id"]): z for z in self.db.flex_zones(self._rate_date_for_week(), True)}
         cards = []
@@ -608,10 +597,13 @@ class FlexToolPage(QWidget):
             cols = 3
         for i, zone in enumerate(cards):
             card = FlexZoneCard(zone, symbol, self.db.balances_hidden())
+            card.set_expanded(card.zone_id in expanded_zones)
             card.add_requested.connect(self.add_delivery)
             card.remove_requested.connect(self.remove_delivery)
             self._zone_cards.append(card)
-            self.zone_grid.addWidget(card, i // cols, i % cols)
+            self.zone_grid.addWidget(card, i // cols, i % cols,
+                                     Qt.Alignment() if card.is_expanded() else Qt.AlignmentFlag.AlignTop)
+            card.expansionChanged.connect(lambda c=card: self.zone_grid.setAlignment(c, Qt.Alignment() if c.is_expanded() else Qt.AlignmentFlag.AlignTop))
         for c in range(max(cols, self.zone_grid.columnCount())):
             self.zone_grid.setColumnStretch(c, 1 if c < cols else 0)
         if not cards:

@@ -288,8 +288,8 @@ class ViajesPage(QWidget):
         layout.addWidget(self.extra_stats_host)
 
         description = QLabel(
-            "Cada día funciona igual que en Viajes: abrilo para ver las jornadas de PedidosYa, Rappi u otras apps. "
-            "Un segundo clic sobre la misma fila deselecciona."
+            "Abrí un día y tocá un extra para ver horas, pedidos y comentarios. "
+            "Usá Editar para modificar el registro."
         )
         description.setObjectName("SmallMuted")
         description.setWordWrap(True)
@@ -757,6 +757,7 @@ class ViajesPage(QWidget):
 
     def _tab_changed(self, index: int) -> None:
         trips_visible = index == 0
+        self.stats_host.setVisible(trips_visible)
         self.search.setVisible(trips_visible)
         self.filter_chip.setVisible(trips_visible and self.trip_filter is not None)
         self.mileage_button.setVisible(trips_visible)

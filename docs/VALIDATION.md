@@ -120,3 +120,8 @@ No modifica el esquema de datos. El smoke de Herramientas deja de bloquear el ar
 - 99 pruebas unitarias aprobadas y `APP_GASTOS_SMOKE_OK`.
 - Revisión visual con cuatro viajes a 1240 y 480 píxeles; las casillas envuelven y los recorridos largos crecen sin scroll interno.
 - El ZIP de testers v0.39.27 corresponde a la versión anterior; esta entrega actualiza el código fuente.
+
+
+## v0.39.29 — Herramientas
+
+Extras y Flex comparten el componente plegable de Viajes. Extras usa una grilla sin tabla interna; las métricas de Viajes se ocultan en esa pestaña. Se verificó conservación del despliegue al editar extras y sumar envíos, selección y edición directa, geometría de Flex y arranque nativo. Capturas revisadas con datos temporales.

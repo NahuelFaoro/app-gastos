@@ -78,6 +78,8 @@ class RequestedUiRuntimeTests(unittest.TestCase):
         for quantity, total in ((0, 0), (123, 1234567.89)):
             card = self.display(FlexZoneCard(dict(id=1, name="Zona 1", quantity=quantity,
                                                  total=total, current_price=4990), "$"), 450, 240)
+            card.set_expanded(True)
+            self.app.processEvents()
             count = card.findChild(QLabel, "FlexZoneCount")
             subtotal = card.findChild(QLabel, "FlexZoneSubtotal")
             positions.append(count.mapTo(card, count.rect().center()).x())
