@@ -48,11 +48,13 @@ class TripCardsTests(unittest.TestCase):
         return self.page.trips_tree._cards["2026-09-07"]
 
     def test_checks_persist_without_losing_trip_data(self):
+        self.day()._compact_cards[0].set_expanded(True)
         flex_id = next(d["id"] for d in self.db.work_field_definitions() if d.get("built_in_key") == "flex")
         self.day()._compact_cards[0].checks[flex_id].click()
         self.app.processEvents()
         self.assertFalse(self.db.work_trip(self.trip_id)["flex"])
         self.assertTrue(self.day().is_expanded())
+        self.assertTrue(self.day()._compact_cards[0].is_expanded())
         self.day()._compact_cards[0].checks[self.custom].click()
         self.app.processEvents()
         saved = self.db.work_trip(self.trip_id)
@@ -62,6 +64,20 @@ class TripCardsTests(unittest.TestCase):
         self.assertEqual(saved["details"], "Conservar detalle")
         self.assertEqual(len(self.db.work_trips_for_week("2026-09-07")), 1)
         self.assertEqual(self.db.work_week_summary("2026-09-07")["flex"], 0)
+
+    def test_trip_header_toggles_details_and_survives_refresh(self):
+        card = self.day()._compact_cards[0]
+        self.assertFalse(card.is_expanded())
+        self.assertTrue(card.details_body.isHidden())
+        QTest.mouseClick(card.header, Qt.MouseButton.LeftButton)
+        self.assertTrue(card.is_expanded())
+        self.page.refresh_trips()
+        card = self.day()._compact_cards[0]
+        self.assertTrue(card.is_expanded())
+        QTest.mouseClick(card.header, Qt.MouseButton.LeftButton)
+        self.assertFalse(card.is_expanded())
+        self.page.refresh_trips()
+        self.assertFalse(self.day()._compact_cards[0].is_expanded())
 
     def test_card_actions_and_single_scroll(self):
         view = self.page.trips_tree
@@ -78,6 +94,7 @@ class TripCardsTests(unittest.TestCase):
         view.tripDoubleClicked.connect(edited.append)
         card.edit_button.click()
         self.assertEqual(edited, [self.trip_id])
+        card.set_expanded(True)
         for width in (1200, 620):
             view.resize(width, 750)
             self.app.processEvents()

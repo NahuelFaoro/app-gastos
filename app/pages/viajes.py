@@ -258,7 +258,7 @@ class ViajesPage(QWidget):
         layout.setContentsMargins(0, 8, 0, 0)
         layout.setSpacing(8)
 
-        hint = QLabel("Abrí un día para ver los recorridos. Las casillas guardan los cambios al marcarlas; usá Editar para modificar el viaje.")
+        hint = QLabel("Abrí un día y tocá el encabezado de un viaje para ver su detalle. Las casillas guardan los cambios al marcarlas.")
         hint.setObjectName("SmallMuted")
         hint.setWordWrap(True)
         layout.addWidget(hint)

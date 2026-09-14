@@ -10,7 +10,7 @@ lógica de persistencia ni consultas SQLite.
 from collections import defaultdict
 from datetime import date
 
-from PySide6.QtCore import QSize, Qt, Signal
+from PySide6.QtCore import QSize, Qt, Signal, QEvent
 from PySide6.QtGui import QKeyEvent, QPainter, QPen, QPalette
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -279,6 +279,7 @@ class TripCheckBox(QCheckBox):
 class TripCompactCard(QFrame):
     """Registro de viaje, con lectura por bloques y edición directa de checks."""
 
+    expansionChanged = Signal()
     clicked = Signal(int)
     doubleClicked = Signal(int)
     fieldChanged = Signal(int, object, bool)
@@ -295,7 +296,14 @@ class TripCompactCard(QFrame):
         root.setSpacing(10)
         root.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        top = QHBoxLayout()
+        self.header = QFrame()
+        self.header.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.header.installEventFilter(self)
+        top = QHBoxLayout(self.header)
+        top.setContentsMargins(0, 0, 0, 0)
+        self.chevron = QLabel("›")
+        self.chevron.setObjectName("WorkDayChevron")
+        top.addWidget(self.chevron)
         client = QLabel(str(trip.get("client") or "Sin cliente"))
         client.setObjectName("TransactionTitle")
         client.setWordWrap(True)
@@ -309,7 +317,12 @@ class TripCompactCard(QFrame):
         self.edit_button.setToolTip("Editar este viaje")
         self.edit_button.clicked.connect(lambda: self.doubleClicked.emit(self.trip_id))
         top.addWidget(self.edit_button)
-        root.addLayout(top)
+        root.addWidget(self.header)
+        self.details_body = QWidget()
+        detail_layout = QVBoxLayout(self.details_body)
+        detail_layout.setContentsMargins(0, 0, 0, 0)
+        detail_layout.setSpacing(10)
+        root.addWidget(self.details_body)
 
         destinations = [str(x) for x in trip.get("destinations") or [] if str(x).strip()]
         count = TripsByDayView.stop_count(trip)
@@ -327,7 +340,7 @@ class TripCompactCard(QFrame):
             value_label.setMinimumWidth(0)
             row.addWidget(label, 0, Qt.AlignmentFlag.AlignTop)
             row.addWidget(value_label, 1)
-            root.addLayout(row)
+            detail_layout.addLayout(row)
 
         host = QWidget()
         flow = FlowLayout(host, horizontal_spacing=18, vertical_spacing=8)
@@ -352,7 +365,7 @@ class TripCompactCard(QFrame):
                 label.setObjectName("WorkDayChip")
                 flow.addWidget(label)
         if flow.count():
-            root.addWidget(host)
+            detail_layout.addWidget(host)
         else:
             host.deleteLater()
         if trip.get("calculated_price") is not None:
@@ -360,17 +373,39 @@ class TripCompactCard(QFrame):
             label = QLabel(f"{scheme.get('name') or 'Tarifa'} · {money(float(trip['calculated_price']), symbol, hidden_amounts)}")
             label.setObjectName("SmallMuted")
             label.setWordWrap(True)
-            root.addWidget(label)
+            detail_layout.addWidget(label)
         if trip.get("details"):
             details = QLabel(str(trip["details"]))
             details.setObjectName("SmallMuted")
             details.setWordWrap(True)
             details.setTextFormat(Qt.TextFormat.PlainText)
-            root.addWidget(details)
+            detail_layout.addWidget(details)
         # Las etiquetas dejan pasar el clic al registro; los controles conservan
         # sus propias acciones, sin seleccionar ni abrir el diálogo al marcar.
         for label in self.findChildren(QLabel):
             label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+
+        self.set_expanded(False)
+
+    def set_expanded(self, expanded: bool) -> None:
+        self._expanded = bool(expanded)
+        self.details_body.setVisible(self._expanded)
+        self.chevron.setText("⌄" if self._expanded else "›")
+        self.header.setToolTip("Ocultar detalle" if self._expanded else "Ver detalle del viaje")
+        self.setSizePolicy(QSizePolicy.Policy.Expanding,
+                           QSizePolicy.Policy.Minimum if self._expanded else QSizePolicy.Policy.Fixed)
+        self.updateGeometry()
+        self.expansionChanged.emit()
+
+    def is_expanded(self) -> bool:
+        return self._expanded
+
+    def eventFilter(self, watched, event):
+        if watched is self.header and event.type() == QEvent.Type.MouseButtonRelease and event.button() == Qt.MouseButton.LeftButton:
+            self.set_expanded(not self._expanded)
+            self.clicked.emit(self.trip_id)
+            return True
+        return super().eventFilter(watched, event)
 
     def set_selected(self, selected: bool) -> None:
         self.setProperty("selected", bool(selected))
@@ -391,9 +426,10 @@ class TripCompactCard(QFrame):
 
     def keyPressEvent(self, event) -> None:
         if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
-            self.doubleClicked.emit(self.trip_id)
+            self.set_expanded(not self._expanded)
             event.accept()
         elif event.key() == Qt.Key.Key_Space:
+            self.set_expanded(not self._expanded)
             self.clicked.emit(self.trip_id)
             event.accept()
         else:
@@ -450,6 +486,7 @@ class DayGroupCard(QFrame):
         self._compact_cards = []
         for trip in rows:
             card = TripCompactCard(trip, field_definitions or [], symbol, hidden_amounts)
+            card.expansionChanged.connect(self._arrange_cards)
             card.clicked.connect(self.tripSelected.emit)
             card.doubleClicked.connect(self.tripDoubleClicked.emit)
             card.fieldChanged.connect(self.fieldChanged.emit)
@@ -474,7 +511,8 @@ class DayGroupCard(QFrame):
         for column in range(max(self._columns, columns)):
             self.compact_layout.setColumnStretch(column, 1 if column < columns else 0)
         for index, card in enumerate(self._compact_cards):
-            self.compact_layout.addWidget(card, index // columns, index % columns)
+            self.compact_layout.addWidget(card, index // columns, index % columns,
+                                              Qt.Alignment() if card.is_expanded() else Qt.AlignmentFlag.AlignTop)
         self._columns = columns
 
     def clear_selection(self) -> None:
@@ -502,6 +540,7 @@ class TripsByDayView(QWidget):
         self._cards: dict[str, DayGroupCard] = {}
         self._selected_trip_id: int | None = None
         self._has_populated = False
+        self._expanded_trips: set[int] = set()
         self._compact = False
         self._field_definitions: list[dict] = []
 
@@ -546,6 +585,12 @@ class TripsByDayView(QWidget):
         mileage_rows: list[dict] | None = None,
     ) -> None:
         expanded_days = {key for key, card in self._cards.items() if card.is_expanded()}
+        for day_card in self._cards.values():
+            for trip_card in day_card._compact_cards:
+                if trip_card.is_expanded():
+                    self._expanded_trips.add(trip_card.trip_id)
+                else:
+                    self._expanded_trips.discard(trip_card.trip_id)
         self._selected_trip_id = None
         self.selectionChanged.emit(None)
 
@@ -591,6 +636,8 @@ class TripsByDayView(QWidget):
                 compact=self._compact,
                 field_definitions=self._field_definitions,
             )
+            for trip_card in card._compact_cards:
+                trip_card.set_expanded(trip_card.trip_id in self._expanded_trips)
             card.tripSelected.connect(lambda trip_id, source=card: self._select_trip(source, trip_id))
             card.tripDoubleClicked.connect(self.tripDoubleClicked.emit)
             card.fieldChanged.connect(self.fieldChanged.emit)
