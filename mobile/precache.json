@@ -24,6 +24,8 @@
   "periods.mjs",
   "planning.mjs",
   "storage.mjs",
+  "sync-merge.mjs",
+  "transactions-ui.mjs",
   "vendor/languages/LICENSE",
   "vendor/languages/spa.traineddata.gz",
   "vendor/pdfjs-dist/build/pdf.mjs",
@@ -70,5 +72,6 @@
   "vendor/tesseract.js-core/tesseract-core-simd.wasm.js",
   "vendor/tesseract.js-core/tesseract-core.wasm.js",
   "vendor/versions.json",
+  "work-model.mjs",
   "work-ui.mjs"
 ]

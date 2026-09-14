@@ -23,3 +23,6 @@ Protocolo previsto: intercambio paginado de operaciones con identificador idempo
 - Pedir al usuario la activación concreta antes de subir su información financiera. La autorización previa para publicar archivos estáticos no autoriza publicar su base.
 
 Límites oficiales consultados: https://developers.cloudflare.com/d1/platform/pricing/ y https://developers.cloudflare.com/workers/platform/limits/
+
+## Decisión de autenticación (0.4)
+El usuario eligió iniciar sesión con una cuenta en cada dispositivo. Se propone Supabase Auth y se espera la creación de su cuenta/proyecto. El esquema preliminar está en cloud/supabase y la conciliación pura en mobile/sync-merge.mjs. La propuesta inicial Worker/D1 queda reemplazada para autenticación y almacenamiento privado. Ningún cliente se conecta aún: siguen pendientes integración de sesiones, mapeo SQLite, pantalla de conflictos y pruebas de políticas en el backend real.

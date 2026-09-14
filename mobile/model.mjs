@@ -1,6 +1,6 @@
 import {desktopCategories} from './design.mjs';
 import {validatePlanning} from './planning.mjs';
-export const VERSION = '0.3.0';
+export const VERSION = '0.4.0';
 export const collections = ['accounts','categories','transactions','trips','extras','mileage','zones','deliveries'];
 export const uid = () => crypto.randomUUID();
 export const today = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
@@ -21,8 +21,8 @@ export function validate(s){
  for(const r of s.extras){if(!r.app||!integer(r.minutes)||r.minutes<0||!integer(r.orders)||r.orders<0||!integer(r.amount)||r.amount<0)throw Error('Datos del extra inválidos.');}
  for(const r of s.mileage){if(!Number.isFinite(r.start)||!Number.isFinite(r.end)||r.start<0||r.end<r.start)throw Error('El odómetro final debe ser mayor o igual al inicial.');}
  if(new Set(s.mileage.map(r=>r.date)).size!==s.mileage.length)throw Error('Hay dos registros de kilometraje para el mismo día.');
- for(const z of s.zones){name(z);if(!integer(z.rate)||z.rate<0)throw Error('Tarifa inválida.');}
- for(const d of s.deliveries){if(!has('zones',d.zone)||!integer(d.amount)||d.amount<0)throw Error('Envío inválido.');}
+ for(const z of s.zones){name(z);if(!integer(z.rate)||z.rate<0)throw Error('Tarifa inválida.');if(z.rates!=null){if(!Array.isArray(z.rates)||new Set(z.rates.map(r=>r.date)).size!==z.rates.length||z.rates.some(r=>!validDate(r.date)||!integer(r.amount)||r.amount<0))throw Error('Historial de tarifas inválido.');}}
+ for(const d of s.deliveries){if(!has('zones',d.zone)||!integer(d.amount)||d.amount<0||(d.quantity!=null&&(!integer(d.quantity)||d.quantity<1)))throw Error('Envío inválido.');}
  return validatePlanning(s);
 }
 export function rawBalance(s,id){return s.transactions.reduce((n,t)=>n+(t.to===id&&t.kind==='transfer'?t.amount:0)+(t.account===id?(t.kind==='income'?t.amount:-t.amount):0),(s.accounts.find(a=>a.id===id)?.initial||0)+(s.adjustments||[]).filter(a=>a.account===id).reduce((n,a)=>n+a.amount,0));}

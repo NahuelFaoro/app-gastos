@@ -29,3 +29,6 @@ La copia del escritorio conserva un snapshot de las tablas financieras para no d
 
 ### Actualización 0.3.0
 Dashboard con la estructura de escritorio, gráficos locales, navegación de meses y semanas anteriores y selector visual de iconos. Los datos existentes se conservan. Para recibir la actualización, abrir con Internet, cerrar todas las ventanas de la app y volver a abrir. Ajustes muestra la versión instalada.
+
+### Actualización 0.4.0
+Filtros completos y movimientos desplegables; personalización de Viajes con resúmenes, tarifas de Flex por fecha y manejo correcto de lotes importados. La sincronización con cuentas individuales sigue en preparación y no se ha activado.

@@ -60,7 +60,7 @@ def export_mobile(db):
             s['mileage'].append({'id':ref('mileage',m['work_date']),'date':m['work_date'],'start':m['odometer_start'],'end':m['odometer_end'],'desktop':m})
     for z in tables['flex_zones']:
         rates=sorted((r for r in tables['flex_zone_rates'] if r['zone_id']==z['id']),key=lambda r:r['effective_from'])
-        s['zones'].append({**base(z,'flex_zones'),'name':z['name'],'color':z['color'],'rate':cents(rates[-1]['price']) if rates else 0})
+        s['zones'].append({**base(z,'flex_zones'),'name':z['name'],'color':z['color'],'rate':cents(rates[-1]['price']) if rates else 0,'rates':[{'date':r['effective_from'],'amount':cents(r['price'])} for r in rates]})
     for d in tables['flex_deliveries']:s['deliveries'].append({**base(d,'flex_deliveries'),'zone':ref('flex_zones',d['zone_id']),
         'date':d['week_start'],'quantity':d['quantity'],'amount':cents(d['unit_price'])*d['quantity']})
     for f in tables['work_field_definitions']:

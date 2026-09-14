@@ -7,6 +7,16 @@ from app.db import Database
 from app.mobile_export import export_mobile
 
 class ExportMobileTest(unittest.TestCase):
+    def test_export_preserves_zone_rate_dates(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db = Database(Path(tmp)/'test.db'); db.initialize()
+            with db.connect() as con:
+                zone = con.execute("INSERT INTO flex_zones(name) VALUES ('Zona temporal')").lastrowid
+                con.executemany('INSERT INTO flex_zone_rates(zone_id, price, effective_from) VALUES (?,?,?)',
+                    [(zone, 4990, '2026-01-01'), (zone, 5990, '2026-02-01')])
+            exported = next(z for z in export_mobile(db)['zones'] if z['name'] == 'Zona temporal')
+            self.assertEqual(exported['rates'], [{'date':'2026-01-01','amount':499000}, {'date':'2026-02-01','amount':599000}])
+
     def test_export_keeps_snapshot_and_excludes_credentials(self):
         with tempfile.TemporaryDirectory() as tmp:
             db=Database(Path(tmp)/'test.db');db.initialize()

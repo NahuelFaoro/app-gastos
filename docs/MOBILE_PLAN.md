@@ -27,3 +27,13 @@ Dashboard alineado con la estructura de escritorio: saldo disponible, resumen me
 Navegación por mes en Dashboard/Movimientos y por semana/mes en Viajes, Extras y Flex, con flechas, fecha y regreso a hoy. Catálogo visual de 82 iconos con búsqueda, paleta y vista previa. Campos de tarjeta condicionales y contraste del tema claro corregidos. Sin cambios de esquema ni sincronización automática.
 
 Verificación: 12 pruebas de modelo/calendario/agregación; scripts check_mobile_desktop, check_mobile_refinements y check_mobile, incluyendo anchos 320/390/768/1280, edición, períodos entre años, persistencia y OCR PNG/PDF offline en Chromium. Queda pendiente validación física en Safari/iPhone y Android.
+
+## Móvil 0.4.0
+
+Movimientos incorpora búsqueda inmediata, filtros por fechas/cuenta/categoría jerárquica/importes, todo el historial, orden, totales filtrados, detalle plegable y "Usar como nuevo" sin copiar identidades ni referencias de cuotas/recurrentes. Renderiza 50 movimientos por tanda.
+
+Viajes: campos personalizados con resumen funcional, casillas que guardan directamente, activar/ocultar/reordenar desde Personalizar. Flex: tarifas con vigencia e historial, fecha explícita de registro y resta de una unidad de lotes importados. Exportación Desktop conserva todas las tarifas. Categorías permite elegir un destino compatible y excluye sus descendientes; formularios móviles usan teclado numérico y tamaños de texto legibles sin zoom automático.
+
+Sincronización: el usuario eligió cuentas individuales. Se prepara Supabase Auth; falta su cuenta/proyecto y la integración de clientes. cloud/supabase contiene el esquema preliminar y mobile/sync-merge.mjs la conciliación de cambios, probada aisladamente. NO hay conexión, credenciales ni envío automático de datos. Ver cloud/README.md.
+
+Pruebas: 18 casos de modelo, filtros, tarifas y conciliación; exportación con SQLite temporal; navegadores de prueba verifican pantallas 320–1280, filtros, campos, Flex, persistencia y OCR offline. No sustituye pruebas en dispositivos físicos.
