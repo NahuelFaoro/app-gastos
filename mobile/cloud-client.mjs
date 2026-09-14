@@ -1,7 +1,16 @@
 import {cloudURL,publishableKey} from './cloud-config.mjs';
+export function authErrorMessage(result,status){
+ const code=result.code||result.error_code;
+ if(code==='email_address_not_authorized')return 'El registro no pudo enviar el correo: falta habilitar el servicio de emails de App Gastos para esta dirección. No es un problema de tu contraseña.';
+ if(code==='over_email_send_rate_limit'||status===429)return 'Se alcanzó el límite temporal de intentos o correos. Esperá antes de volver a intentarlo.';
+ if(code==='email_not_confirmed')return 'Confirmá tu email antes de iniciar sesión. Revisá también la carpeta de spam.';
+ if(code==='invalid_credentials')return 'El email o la contraseña no son correctos.';
+ if(status===401)return 'La sesión venció. Volvé a iniciar sesión.';
+ return result.msg||result.message||result.error_description||'No se pudo conectar con la nube. Volvé a intentar.';
+}
 export class CloudClient {
  constructor({fetcher=(...args)=>fetch(...args),url=cloudURL,key=publishableKey,onSession=()=>{}}={}){this.fetcher=fetcher;this.url=url;this.key=key;this.session=null;this.onSession=onSession;this.refreshing=null;}
- async request(path,body,token,method){const response=await this.fetcher(this.url+path,{method:method||(body===undefined?'GET':'POST'),headers:{apikey:this.key,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},...(body===undefined?{}:{body:JSON.stringify(body)}),cache:'no-store',signal:AbortSignal.timeout(20000)});const result=await response.json().catch(()=>({}));if(!response.ok){const error=new Error(response.status===401?'La sesión venció. Volvé a iniciar sesión.':result.msg||result.message||result.error_description||'No se pudo conectar con la nube.');error.status=response.status;throw error;}return result;}
+ async request(path,body,token,method){const response=await this.fetcher(this.url+path,{method:method||(body===undefined?'GET':'POST'),headers:{apikey:this.key,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},...(body===undefined?{}:{body:JSON.stringify(body)}),cache:'no-store',signal:AbortSignal.timeout(20000)});const result=await response.json().catch(()=>({}));if(!response.ok){const error=new Error(authErrorMessage(result,response.status));error.status=response.status;throw error;}return result;}
  async setSession(session){this.session=session;await this.onSession(session);return session;}
  async login(email,password){const s=await this.request('/auth/v1/token?grant_type=password',{email,password});return this.setSession({...s,expires_at:Date.now()/1000+s.expires_in});}
  async signup(email,password){return this.request('/auth/v1/signup',{email,password});}

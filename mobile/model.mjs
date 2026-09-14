@@ -1,6 +1,6 @@
 import {desktopCategories} from './design.mjs';
 import {validatePlanning} from './planning.mjs';
-export const VERSION = '0.5.0';
+export const VERSION = '0.5.1';
 export const collections = ['accounts','categories','transactions','trips','extras','mileage','zones','deliveries'];
 export const uid = () => crypto.randomUUID();
 export const today = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };

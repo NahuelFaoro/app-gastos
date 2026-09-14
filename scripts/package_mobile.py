@@ -10,7 +10,7 @@ revision=hashlib.sha256(sw_source.encode()+b"".join(p.read_bytes() for p in file
 sw=mobile/"sw.js"
 sw.write_text(re.sub(r"const CACHE='[^']+';",f"const CACHE='ag-independent-{revision}';",sw.read_text(encoding="utf-8")),encoding="utf-8")
 (mobile/"precache.json").write_text(json.dumps([p.relative_to(mobile).as_posix() for p in files],indent=2),encoding="utf-8")
-output=root/"dist"/"AppGastos_Movil_0.5.0_WEB.zip"
+output=root/"dist"/"AppGastos_Movil_0.5.1_WEB.zip"
 output.parent.mkdir(exist_ok=True)
 with ZipFile(output,"w",ZIP_DEFLATED) as z:
  for p in mobile.rglob("*"):
