@@ -19,3 +19,11 @@ El despliegue HTTPS también pasó recarga offline, persistencia, viajes y OCR P
 Traslado del catálogo ilustrado y las secciones principales. Nuevos módulos desktop-ui, work-ui y planning. Exportación explícita desde Desktop, validada con el modelo móvil en pruebas sobre una base temporal. La importación reemplaza la copia móvil con confirmación; no envía datos a Internet.
 
 No es todavía equivalencia integral: quedan importadores bancarios/Excel, reglas avanzadas de tarifas e interfaces de ajuste/histórico. La sincronización automática está diseñada en SYNC_DESIGN.md pero no está implementada ni activa.
+
+## Móvil 0.3.0
+
+Dashboard alineado con la estructura de escritorio: saldo disponible, resumen mensual con resultado y comparación anterior, cuentas, distribución de gastos por categoría principal (incluye descendientes y sin categoría), flujo de seis meses, actividad reciente y cuotas activas. Los gráficos incluyen leyenda e importes accesibles; no dependen de servicios externos.
+
+Navegación por mes en Dashboard/Movimientos y por semana/mes en Viajes, Extras y Flex, con flechas, fecha y regreso a hoy. Catálogo visual de 82 iconos con búsqueda, paleta y vista previa. Campos de tarjeta condicionales y contraste del tema claro corregidos. Sin cambios de esquema ni sincronización automática.
+
+Verificación: 12 pruebas de modelo/calendario/agregación; scripts check_mobile_desktop, check_mobile_refinements y check_mobile, incluyendo anchos 320/390/768/1280, edición, períodos entre años, persistencia y OCR PNG/PDF offline en Chromium. Queda pendiente validación física en Safari/iPhone y Android.

@@ -1,6 +1,7 @@
 [
   "app.css",
   "app.mjs",
+  "dashboard.mjs",
   "design.mjs",
   "desktop-ui.mjs",
   "desktop.css",
@@ -20,6 +21,7 @@
   "manifest.webmanifest",
   "model.mjs",
   "ocr.mjs",
+  "periods.mjs",
   "planning.mjs",
   "storage.mjs",
   "vendor/languages/LICENSE",

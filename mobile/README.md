@@ -26,3 +26,6 @@ Validado automáticamente en Chromium. Pendiente validar instalación, rendimien
 Navegación Desktop, 82 iconos ilustrados, categorías jerárquicas, cuentas de distintos tipos, análisis, calendario, cuotas, recurrentes, presupuestos, comprobantes pendientes y herramientas agrupadas por día. Los datos de 0.1 se conservan.
 
 La copia del escritorio conserva un snapshot de las tablas financieras para no descartar metadatos todavía sin editor móvil. No incorpora credenciales. Siguen pendientes equivalencia completa de tarifas personalizadas, importadores bancarios/Excel, gestión de ajustes, algunas vistas históricas y sincronización automática. No usar el JSON como sustituto de un respaldo SQLite.
+
+### Actualización 0.3.0
+Dashboard con la estructura de escritorio, gráficos locales, navegación de meses y semanas anteriores y selector visual de iconos. Los datos existentes se conservan. Para recibir la actualización, abrir con Internet, cerrar todas las ventanas de la app y volver a abrir. Ajustes muestra la versión instalada.
