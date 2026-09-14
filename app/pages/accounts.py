@@ -152,6 +152,9 @@ class AccountsPage(QWidget):
             if account.get("type") == "Tarjeta":
                 overview = self.db.card_overview(int(account["id"]))
                 account["card_debt_display"] = self._fmt(float(overview.get("debt") or 0))
+                account["card_spent_display"] = self._fmt(float(overview.get("current_spent") or 0))
+                if float(overview.get("credit_balance") or 0) > 0:
+                    account["card_credit_display"] = self._fmt(float(overview["credit_balance"]))
                 account["card_configured"] = bool(overview.get("configured"))
                 if float(overview.get("credit_limit") or 0) > 0:
                     account["card_available_display"] = self._fmt(float(overview.get("available_credit") or 0))

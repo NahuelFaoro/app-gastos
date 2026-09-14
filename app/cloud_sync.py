@@ -3,6 +3,7 @@ import json
 import time
 import uuid
 import sqlite3
+from contextlib import closing
 from datetime import datetime
 import keyring
 import requests
@@ -61,7 +62,7 @@ class CloudSync:
     def backup(self):
         target=self.db.path.parent/'backups';target.mkdir(exist_ok=True)
         path=target/('antes-sync-'+datetime.now().strftime('%Y%m%d-%H%M%S-%f')+'.db')
-        with sqlite3.connect(self.db.path) as source,sqlite3.connect(path) as destination:source.backup(destination)
+        with closing(sqlite3.connect(self.db.path)) as source,closing(sqlite3.connect(path)) as destination:source.backup(destination)
         return path
 
     def remote(self):

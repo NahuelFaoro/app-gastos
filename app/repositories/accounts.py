@@ -76,7 +76,8 @@ class AccountsMixin:
                 raise ValueError("La cuenta está en uso por movimientos, ajustes, presupuestos o recurrentes. Podés editarla, pero no eliminarla.")
             con.execute("DELETE FROM accounts WHERE id=?", (account_id,))
 
-    def account_balance(self, account_id: int) -> float:
+    def account_balance(self, account_id: int, reference: date | None = None) -> float:
+        as_of = (reference or date.today()).isoformat()
         with self.connect() as con:
             row = con.execute(
                 """
@@ -89,15 +90,15 @@ class AccountsMixin:
                         SELECT SUM(adj.amount)
                         FROM account_adjustments adj
                         WHERE adj.account_id=a.id
-                          AND date(adj.adjustment_date) <= date('now','localtime')
+                          AND date(adj.adjustment_date) <= date(?)
                     ),0) AS balance
                 FROM accounts a
                 LEFT JOIN transactions t ON (t.account_id=a.id OR t.to_account_id=a.id)
-                    AND date(t.tx_date) <= date('now','localtime')
+                    AND date(t.tx_date) <= date(?)
                 WHERE a.id=?
                 GROUP BY a.id
                 """,
-                (account_id,),
+                (as_of, as_of, account_id),
             ).fetchone()
         return float(row[0] or 0) if row else 0.0
 
@@ -250,7 +251,7 @@ class AccountsMixin:
             previous_start = date(py, pm, 1)
             last_close = current_start - timedelta(days=1)
             last_due = None
-        balance = self.account_balance(int(account_id))
+        balance = self.account_balance(int(account_id), today)
         debt = max(0.0, -float(balance))
         credit_limit = float(account.get("credit_limit") or 0)
         available_credit = max(0.0, credit_limit - debt) if credit_limit > 0 else 0.0
@@ -268,6 +269,7 @@ class AccountsMixin:
             "configured": configured,
             "balance": balance,
             "debt": debt,
+            "credit_balance": max(0.0, float(balance)),
             "credit_limit": credit_limit,
             "available_credit": available_credit,
             "current_start": current_start.isoformat(),

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+from datetime import date
 from pathlib import Path
 
 from app.db import Database
@@ -30,6 +31,27 @@ class AccountSemanticsTests(unittest.TestCase):
         self.assertEqual(card["balance"], 0.0)
         self.assertGreater(card["raw_balance"], 0.0)
         self.assertAlmostEqual(self.db.net_worth(), 1_285_338.45, places=2)
+
+    def test_payment_zeroes_only_existing_debt_and_new_purchases_accumulate(self):
+        card = self.db.add_account('Card regression', 'Tarjeta', 0, '#EF4444', False, 0, 30, 10)
+        with self.db.connect() as con:
+            for day, amount in [('2020-09-05', 1200), ('2020-09-10', 500)]:
+                con.execute("INSERT INTO transactions(kind,amount,account_id,tx_date) VALUES('expense',?,?,?)", (amount, card, day))
+        self.assertEqual(self.db.account_balance(card, date(2020,9,6)), -1200)
+        self.db.add_account_adjustment(card, 1200, '2020-09-06', 'Already paid', 'card_payment_external')
+        self.assertEqual(self.db.card_overview(card, date(2020,9,6))['debt'], 0)
+        overview = self.db.card_overview(card, date(2020,9,14))
+        self.assertEqual(overview['debt'], 500)
+        self.assertEqual(overview['current_spent'], 1700)
+        self.assertEqual(overview['credit_balance'], 0)
+
+    def test_real_overpayment_is_visible_as_credit_without_hiding_consumption(self):
+        card = self.db.add_account('Credit regression', 'Tarjeta', 0, '#EF4444', False, 0, 30, 10)
+        with self.db.connect() as con:
+            con.execute("INSERT INTO transactions(kind,amount,account_id,tx_date) VALUES('expense',100,?,'2020-09-05')", (card,))
+        self.db.add_account_adjustment(card, 150, '2020-09-06')
+        overview = self.db.card_overview(card, date(2020,9,14))
+        self.assertEqual((overview['debt'],overview['credit_balance'],overview['current_spent']), (0,50,100))
 
 
 class WorkCustomizationTests(unittest.TestCase):

@@ -587,9 +587,9 @@ class AccountCard(QFrame):
         included = bool(account.get("include_in_balance", 1))
         self.included = included
         self.setObjectName("AccountCard" if included else "AccountCardExcluded")
-        self.setFixedHeight(174)
+        self.setMinimumHeight(174)
         self.setMinimumWidth(270)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setToolTip("Doble clic para editar · clic derecho para más acciones")
 
@@ -612,6 +612,11 @@ class AccountCard(QFrame):
         if is_card and account.get("card_debt_display") is not None:
             balance = QLabel(account.get("card_debt_display") or formatted_balance); balance.setObjectName("AccountBalance")
             root.addWidget(balance)
+            caption = QLabel("Deuda actual · pagos descontados"); caption.setObjectName("SmallMuted"); root.addWidget(caption)
+            if account.get("card_spent_display"):
+                spent = QLabel(f"Consumos del período  {account['card_spent_display']}"); spent.setObjectName("SmallMuted"); root.addWidget(spent)
+            if account.get("card_credit_display"):
+                credit = QLabel(f"Saldo a favor  {account['card_credit_display']}"); credit.setObjectName("SmallMuted"); root.addWidget(credit)
             if account.get("card_configured"):
                 closing = account.get("closing_day") or "—"; due = account.get("due_day") or "—"
                 detail_text = f"Cierra {closing} · vence {due}"

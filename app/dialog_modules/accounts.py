@@ -166,6 +166,13 @@ class CardPaymentDialog(QDialog):
         if self.mode.currentData() == "account" and self.source.currentData() is None:
             QMessageBox.warning(self,"Pago","Necesitás otra cuenta desde donde pagar."); return
         if self.amount.value() <= 0: QMessageBox.warning(self,"Pago","Ingresá un importe mayor a cero."); return
+        from datetime import date
+        payment_date = date.fromisoformat(self.date.date().toString("yyyy-MM-dd"))
+        debt = max(0.0, -self.db.account_balance(int(self.card['id']), payment_date))
+        if float(self.amount.value()) > debt + 0.005:
+            excess = money(float(self.amount.value()) - debt, self.db.currency_symbol(), self.db.balances_hidden())
+            if QMessageBox.question(self, "Pago mayor que la deuda", f"El importe supera la deuda registrada para esa fecha en {excess}. Ese excedente compensará compras futuras. Si solo querés dejar la tarjeta en cero, cancelá y usá el importe de la deuda. ¿Registrar igualmente?", QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:
+                return
         self.accept()
     def _mode_changed(self):
         external = self.mode.currentData() == "external"
