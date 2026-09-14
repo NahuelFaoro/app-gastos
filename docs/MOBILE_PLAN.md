@@ -13,3 +13,9 @@ Ver mobile/README.md para instalación, límites, respaldos y publicación.
 Publicado: https://app-gastos-movil.pages.dev/
 
 El despliegue HTTPS también pasó recarga offline, persistencia, viajes y OCR PNG/PDF sin red. La caché normaliza respuestas redirigidas para compatibilidad con Cloudflare Pages.
+
+## Móvil 0.2 / Desktop 0.39.31
+
+Traslado del catálogo ilustrado y las secciones principales. Nuevos módulos desktop-ui, work-ui y planning. Exportación explícita desde Desktop, validada con el modelo móvil en pruebas sobre una base temporal. La importación reemplaza la copia móvil con confirmación; no envía datos a Internet.
+
+No es todavía equivalencia integral: quedan importadores bancarios/Excel, reglas avanzadas de tarifas e interfaces de ajuste/histórico. La sincronización automática está diseñada en SYNC_DESIGN.md pero no está implementada ni activa.

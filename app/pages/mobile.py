@@ -3,7 +3,7 @@ from __future__ import annotations
 from PySide6.QtCore import QTimer, Qt, Signal
 from PySide6.QtGui import QDesktopServices, QGuiApplication
 from PySide6.QtWidgets import (
-    QBoxLayout, QCheckBox, QFrame, QHBoxLayout, QLabel, QMessageBox, QPushButton, QVBoxLayout, QWidget,
+    QFileDialog, QBoxLayout, QCheckBox, QFrame, QHBoxLayout, QLabel, QMessageBox, QPushButton, QVBoxLayout, QWidget,
 )
 from PySide6.QtCore import QUrl
 
@@ -66,6 +66,14 @@ class MobileSyncPage(QWidget):
         self.rotate_btn = QPushButton("Nuevo código"); self.rotate_btn.setObjectName("GhostButton"); self.rotate_btn.clicked.connect(self.rotate_code)
         actions.addWidget(self.copy_btn); actions.addWidget(self.open_btn); actions.addWidget(self.rotate_btn); actions.addStretch()
         hl.addLayout(actions)
+        independent = QFrame(); independent.setObjectName("Card")
+        il = QVBoxLayout(independent); il.setContentsMargins(22, 20, 22, 20)
+        it = QLabel("Versión independiente · Android e iPhone"); it.setObjectName("SectionTitle"); il.addWidget(it)
+        info = QLabel("Funciona con la PC apagada. Exportá tus datos y abrí Ajustes → Importar copia en el teléfono. Es un traspaso manual; los cambios posteriores todavía no se sincronizan automáticamente.")
+        info.setWordWrap(True); info.setObjectName("Muted"); il.addWidget(info)
+        open_pwa = QPushButton("Abrir App Gastos Móvil"); open_pwa.clicked.connect(lambda: QDesktopServices.openUrl(QUrl("https://app-gastos-movil.pages.dev/"))); il.addWidget(open_pwa)
+        export_pwa = QPushButton("Exportar datos para el teléfono"); export_pwa.clicked.connect(self.export_independent); il.addWidget(export_pwa)
+        root.addWidget(independent)
         root.addWidget(hero)
 
         steps = QFrame(); steps.setObjectName("Card")
@@ -101,6 +109,20 @@ class MobileSyncPage(QWidget):
         self._refresh_state(); self._apply_responsive()
         if self.autostart.isChecked():
             QTimer.singleShot(650, self.start_server)
+
+    def export_independent(self):
+        import json
+        from pathlib import Path
+        from ..mobile_export import export_mobile
+        path, _ = QFileDialog.getSaveFileName(self, "Exportar para Móvil", "AppGastos-para-Movil.json", "Copia móvil (*.json)")
+        if not path:
+            return
+        try:
+            content = export_mobile(self.db)
+            Path(path).write_text(json.dumps(content, ensure_ascii=False, indent=2), encoding="utf-8")
+            QMessageBox.information(self, "Copia lista", "Importá este archivo desde Ajustes en la versión móvil. Contiene datos financieros: compartilo únicamente con tus dispositivos.")
+        except Exception as exc:
+            QMessageBox.warning(self, "No se pudo exportar", str(exc))
 
     def _apply_responsive(self):
         compact = responsive_mode(self.width(), self.height()) != "wide"

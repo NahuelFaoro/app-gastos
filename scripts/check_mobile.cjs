@@ -22,17 +22,19 @@ const base=process.env.BASE_URL || 'http://127.0.0.1:8767/';
  await page.getByText('Compra de prueba',{exact:true}).waitFor();
  console.log('OFFLINE_RELOAD_AND_PERSISTENCE_OK');
  await page.getByRole('button',{name:'Trabajo',exact:true}).click();
- await page.getByRole('button',{name:'＋ Registro',exact:true}).click();
+ await page.locator('[data-view=work]').click();
+ await page.getByRole('button',{name:'＋ Nuevo viaje',exact:true}).click();
  await page.locator('[name=client]').fill('Cliente móvil');await page.locator('[name=destinations]').fill('Olivos\nRetiro');
  await page.locator('[name=stops]').fill('2');await page.getByRole('button',{name:'Guardar',exact:true}).click();
- await page.locator('summary').filter({hasText:'Cliente móvil'}).click();
+ await page.locator('.day-group > summary').first().click();
+ await page.locator('.day-trips summary').filter({hasText:'Cliente móvil'}).click();
  await page.locator('[data-check=flex]').check();
  await page.waitForFunction(async()=>{const {read}=await import('./storage.mjs');return (await read()).trips[0]?.flex;});
  await page.reload();await page.getByRole('button',{name:'Trabajo',exact:true}).click();
- await page.getByText('Cliente móvil',{exact:true}).waitFor();
+ await page.locator('[data-view=work]').click();await page.locator('.day-group > summary').first().click();await page.getByText('Cliente móvil',{exact:true}).waitFor();
  console.log('OFFLINE_TRIPS_OK');
  for(const width of [320,390,768,1280]){await page.setViewportSize({width,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`overflow ${width}`);await page.screenshot({path:`build/mobile-${width}.png`,fullPage:true});}
- await page.getByRole('button',{name:'Inicio',exact:true}).click();
+ await page.setViewportSize({width:390,height:844});await page.getByRole('button',{name:'Inicio',exact:true}).click();
  for(const ext of ['png','pdf']){
  await page.locator('#scan-file').setInputFiles(`build/mobile-receipt.${ext}`);
  await page.waitForFunction(()=>document.querySelector('dialog').open||document.querySelector('#toast').textContent.startsWith('No se pudo leer'),null,{timeout:120000});
