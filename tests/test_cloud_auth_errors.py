@@ -10,7 +10,7 @@ class CloudAuthErrorsTests(unittest.TestCase):
         service=CloudSync(SimpleNamespace(path=Path('synthetic.db')))
         for code,expected in [('email_not_confirmed','todavía no está confirmado'),('invalid_credentials','cuenta de App Gastos'),('refresh_token_not_found','sesión guardada venció')]:
             response=Mock(ok=False,status_code=400)
-            response.json.return_value={'error_code':code}
+            response.json.return_value={'code':400,'error_code':code,'msg':'Server message'}
             with self.subTest(code=code),patch('app.cloud_sync.requests.request',return_value=response):
                 with self.assertRaisesRegex(ValueError,expected):service.request('/auth/v1/token',{})
 
@@ -26,6 +26,15 @@ class CloudAuthErrorsTests(unittest.TestCase):
         with patch('app.cloud_sync.requests.request') as request:
             with self.assertRaises(ValueError):service.login('test@example.invalid','')
             request.assert_not_called()
+
+    def test_login_preserves_password_exactly_and_normalizes_email(self):
+        service=CloudSync(SimpleNamespace(path=Path('synthetic.db')))
+        response=Mock(ok=False,status_code=400)
+        response.json.return_value={'code':400,'error_code':'invalid_credentials'}
+        password=' Synthetic-ñ-🔑-Test '
+        with patch('app.cloud_sync.requests.request',return_value=response) as request:
+            with self.assertRaises(ValueError):service.login(' Test@Example.Invalid ',password)
+            self.assertEqual(request.call_args.kwargs['json'],{'email':'test@example.invalid','password':password})
 
 
 if __name__=='__main__':unittest.main()

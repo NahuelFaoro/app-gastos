@@ -17,7 +17,7 @@ def cloud_error(response):
         payload=response.json()
     except ValueError:
         payload={}
-    code=(payload.get('code') or payload.get('error_code')) if isinstance(payload,dict) else None
+    code=(payload.get('error_code') or payload.get('code')) if isinstance(payload,dict) else None
     messages={
         'email_not_confirmed':'Tu email todavía no está confirmado. Abrí el enlace del correo de App Gastos antes de iniciar sesión.',
         'invalid_credentials':'No se pudo validar la cuenta de App Gastos. Revisá el email y la contraseña. La cuenta del panel de Supabase es independiente; si aún no te registraste en App Gastos, elegí «Crear o confirmar cuenta en la app».',
@@ -57,7 +57,7 @@ class CloudSync:
         return response.json() if response.content else None
 
     def login(self,email,password):
-        email=email.strip()
+        email=email.strip().lower()
         if not email or '@' not in email:raise ValueError('Ingresá el email de tu cuenta de App Gastos.')
         if not password:raise ValueError('Ingresá tu contraseña de App Gastos.')
         session=self.request('/auth/v1/token?grant_type=password',{'email':email,'password':password})
