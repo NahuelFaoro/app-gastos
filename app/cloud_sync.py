@@ -12,6 +12,28 @@ from .cloud_bridge import export_cloud, apply_cloud, merge_copies, meta, put_met
 URL='https://vqngomcfkijfjydzqebz.supabase.co'
 PUBLIC_KEY='sb_publishable_TF3OUJo7PUxawlf6TCYn-A_ghBC3xgp'
 
+def cloud_error(response):
+    try:
+        payload=response.json()
+    except ValueError:
+        payload={}
+    code=(payload.get('code') or payload.get('error_code')) if isinstance(payload,dict) else None
+    messages={
+        'email_not_confirmed':'Tu email todavía no está confirmado. Abrí el enlace del correo de App Gastos antes de iniciar sesión.',
+        'invalid_credentials':'No se pudo validar la cuenta de App Gastos. Revisá el email y la contraseña. La cuenta del panel de Supabase es independiente; si aún no te registraste en App Gastos, elegí «Crear o confirmar cuenta en la app».',
+        'email_address_not_authorized':'No se pudo enviar el correo a esta dirección: falta configurar el servicio de emails de App Gastos.',
+        'signup_disabled':'El registro de nuevas cuentas está deshabilitado en el servidor.',
+        'user_banned':'Esta cuenta está temporalmente bloqueada por el servidor.',
+        'over_request_rate_limit':'Hubo demasiados intentos. Esperá unos minutos antes de volver a iniciar sesión.',
+        'over_email_send_rate_limit':'Se alcanzó el límite de correos de confirmación. Esperá antes de volver a intentarlo.',
+        'refresh_token_not_found':'La sesión guardada venció. Volvé a iniciar sesión.',
+        'refresh_token_already_used':'La sesión guardada ya no es válida. Volvé a iniciar sesión.',
+    }
+    if code in messages:return messages[code]
+    if response.status_code==429:return 'Hubo demasiados intentos. Esperá unos minutos antes de volver a intentar.'
+    if response.status_code==401:return 'La sesión venció. Volvé a iniciar sesión.'
+    return 'No se pudo completar la conexión con Supabase (HTTP '+str(response.status_code)+').'
+
 class CloudSync:
     def __init__(self, db):
         self.db=db; self.session=None
@@ -31,11 +53,13 @@ class CloudSync:
         if authenticated:headers['Authorization']='Bearer '+self.token()
         response=requests.request('GET' if body is None else 'POST',URL+path,json=body,headers=headers,timeout=20,allow_redirects=False)
         if not response.ok:
-            if response.status_code==401:raise ValueError('La sesión venció. Volvé a iniciar sesión.')
-            raise ValueError('No se pudo completar la conexión con Supabase (HTTP '+str(response.status_code)+').')
+            raise ValueError(cloud_error(response))
         return response.json() if response.content else None
 
     def login(self,email,password):
+        email=email.strip()
+        if not email or '@' not in email:raise ValueError('Ingresá el email de tu cuenta de App Gastos.')
+        if not password:raise ValueError('Ingresá tu contraseña de App Gastos.')
         session=self.request('/auth/v1/token?grant_type=password',{'email':email,'password':password})
         initialize_cloud_ids(self.db)
         bound=meta(self.db,'user')

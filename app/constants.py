@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 APP_NAME = "App Gastos"
-APP_VERSION = "0.39.33"
+APP_VERSION = "0.39.34"
 
 MONTHS = [
     "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",

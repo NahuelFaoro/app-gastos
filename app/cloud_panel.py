@@ -1,6 +1,6 @@
 from PySide6.QtCore import QThread, Signal, QTimer, QUrl, QCoreApplication
 from PySide6.QtGui import QDesktopServices
-from PySide6.QtWidgets import QFrame,QVBoxLayout,QHBoxLayout,QLabel,QPushButton,QLineEdit,QMessageBox
+from PySide6.QtWidgets import QFrame,QVBoxLayout,QHBoxLayout,QLabel,QPushButton,QLineEdit,QMessageBox,QCheckBox
 from .cloud_sync import CloudSync
 
 class CloudJob(QThread):
@@ -20,6 +20,8 @@ class CloudSyncPanel(QFrame):
         hint=QLabel('Usá la misma cuenta en todos tus dispositivos. Primero se guarda localmente; al conectarse se intercambian los cambios.');hint.setWordWrap(True);hint.setObjectName('Muted');box.addWidget(hint)
         self.email=QLineEdit();self.email.setPlaceholderText('Email de tu cuenta de App Gastos');box.addWidget(self.email)
         self.password=QLineEdit();self.password.setPlaceholderText('Contraseña');self.password.setEchoMode(QLineEdit.EchoMode.Password);box.addWidget(self.password)
+        self.show_password=QCheckBox('Mostrar contraseña');self.show_password.toggled.connect(lambda visible:self.password.setEchoMode(QLineEdit.EchoMode.Normal if visible else QLineEdit.EchoMode.Password));box.addWidget(self.show_password)
+        self.password.returnPressed.connect(self.login)
         self.status=QLabel('Sin sesión');self.status.setWordWrap(True);box.addWidget(self.status)
         self.buttons=[]
         for text,fn in [('Iniciar sesión',self.login),('Crear o confirmar cuenta en la app',lambda:QDesktopServices.openUrl(QUrl('https://app-gastos-movil.pages.dev/'))),('Activar sincronización',self.enable),('Sincronizar ahora',lambda:self.run(lambda:self.service.sync())),('Pausar',self.pause),('Cerrar sesión',lambda:self.run(self.service.logout))]:
@@ -51,7 +53,9 @@ class CloudSyncPanel(QFrame):
         for b in self.buttons:b.setEnabled(True)
 
     def login(self):
+        if self.job is not None:return
         email,password=self.email.text().strip(),self.password.text();self.password.clear()
+        self.show_password.setChecked(False)
         self.run(lambda:self.service.login(email,password))
 
     def enable(self):
