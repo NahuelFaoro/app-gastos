@@ -65,3 +65,13 @@ La build completa con OCR sigue disponible mediante `scripts\windows\build_windo
 ## Validación
 
 La entrega ejecuta compilación sintáctica, pruebas unitarias, auditoría y compatibilidad de base. El smoke gráfico nativo se ejecuta automáticamente en Windows desde `start.bat` antes de abrir los datos reales. Detalles en `docs/VALIDATION.md`.
+
+## Versión completa para testers (incluye OCR)
+
+Con las dependencias de requirements.txt, requirements-ocr.txt y PyInstaller instaladas:
+
+`python -m scripts.build_testers`
+
+Compila Windows de 64 bits, prueba el ejecutable con una base temporal y comprueba OCR de imagen y PDF escaneado con modelos locales. Genera `dist/AppGastos_v0.39.27_TESTERS_OCR.zip`, con guía, fuentes y licencias. No incluye la base personal.
+
+Guía para enviar: `docs/GUIA_TESTERS.md`.
