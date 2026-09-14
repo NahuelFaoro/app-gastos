@@ -4,7 +4,7 @@ from PySide6.QtCore import QSize, Qt, QTimer
 from PySide6.QtGui import QFont, QKeySequence, QPalette, QShortcut
 from PySide6.QtWidgets import (
     QApplication, QFrame, QGraphicsBlurEffect, QHBoxLayout, QLabel, QMainWindow, QPushButton,
-    QStackedWidget, QVBoxLayout, QWidget,
+    QStackedWidget, QVBoxLayout, QWidget, QScrollArea,
 )
 
 try:
@@ -12,6 +12,7 @@ try:
 except Exception:
     qta = None
 
+from .ui_helpers import ensure_page_viewport
 from .constants import APP_VERSION
 from .theme import build_palette, build_stylesheet
 from .layouts import SIDEBAR_COMPACT_WIDTH
@@ -58,7 +59,9 @@ class MainWindow(QMainWindow):
         QApplication.instance().setProperty("icon_style", db.get_setting("icon_style", "illustrated"))
         self.setWindowTitle("App Gastos")
         self.resize(1480, 900)
-        self.setMinimumSize(560, 600)
+        self.setMinimumSize(480, 360)
+        area = self.screen().availableGeometry()
+        self.resize(min(1480, int(area.width() * 0.94)), min(900, int(area.height() * 0.90)))
 
         self._compact_sidebar = False
         self.sidebar_captions: list[QLabel] = []
@@ -72,7 +75,13 @@ class MainWindow(QMainWindow):
         self._build_quick_actions(sidebar_layout)
         self._create_pages()
         self._build_navigation(sidebar_layout)
-        outer.addWidget(self.sidebar)
+        self.sidebar_scroll = QScrollArea()
+        self.sidebar_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.sidebar_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.sidebar_scroll.setWidgetResizable(True)
+        self.sidebar_scroll.setWidget(self.sidebar)
+        self.sidebar_scroll.setFixedWidth(self.sidebar.width() + 14)
+        outer.addWidget(self.sidebar_scroll)
         outer.addWidget(self.stack, 1)
 
         self._connect_signals()
@@ -171,6 +180,7 @@ class MainWindow(QMainWindow):
         self.page_index: dict[str, int] = {}
         for key, label, icon_name, page_class in self.PAGE_SPECS:
             page = page_class(self.db)
+            ensure_page_viewport(page)
             setattr(self, key, page)
             index = len(self.pages)
             self.page_index[key] = index
@@ -333,6 +343,7 @@ class MainWindow(QMainWindow):
             return
         self._compact_sidebar = compact
         self.sidebar.setFixedWidth(86 if compact else 236)
+        self.sidebar_scroll.setFixedWidth(self.sidebar.width() + 14)
         self.brand.setVisible(not compact)
         self.brand_sub.setVisible(not compact)
         for cap in self.sidebar_captions:

@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QFrame,
     QGridLayout,
+    QHBoxLayout,
     QLabel,
     QLineEdit,
     QMessageBox,
@@ -171,11 +172,19 @@ class ViajesPage(QWidget):
         self.jump_date = DatePickerButton()
         self.jump_date.dateChanged.connect(self.jump_to_date)
 
-        self.week_layout.addWidget(prev_button)
-        self.week_layout.addWidget(self.week_title)
-        self.week_layout.addWidget(next_button)
-        self.week_layout.addWidget(current_button)
-        self.week_layout.addWidget(self.month_button)
+        period_host = QWidget()
+        period_layout = QHBoxLayout(period_host)
+        period_layout.setContentsMargins(0, 0, 0, 0)
+        period_layout.addWidget(prev_button)
+        period_layout.addWidget(self.week_title, 1)
+        period_layout.addWidget(next_button)
+        shortcuts = QWidget()
+        shortcuts_layout = QHBoxLayout(shortcuts)
+        shortcuts_layout.setContentsMargins(0, 0, 0, 0)
+        shortcuts_layout.addWidget(current_button)
+        shortcuts_layout.addWidget(self.month_button)
+        self.week_layout.addWidget(period_host)
+        self.week_layout.addWidget(shortcuts)
         self.week_layout.addStretch()
         self.saved_label = QLabel("Semanas guardadas")
         self.saved_label.setObjectName("SmallMuted")
@@ -264,6 +273,7 @@ class ViajesPage(QWidget):
         layout.addWidget(hint)
 
         self.trips_tree = TripsByDayView()
+        self.trips_tree.setMinimumHeight(260)
         self.trips_tree.tripDoubleClicked.connect(self._trip_double_clicked)
         self.trips_tree.selectionChanged.connect(self._trip_selection_changed)
         self.trips_tree.fieldChanged.connect(self._update_trip_check)
@@ -296,6 +306,7 @@ class ViajesPage(QWidget):
         layout.addWidget(description)
 
         self.extras_view = ExtrasByDayView()
+        self.extras_view.setMinimumHeight(260)
         self.extras_view.extraDoubleClicked.connect(self._extra_double_clicked)
         self.extras_view.selectionChanged.connect(self._extra_selection_changed)
         layout.addWidget(self.extras_view, 1)
@@ -304,15 +315,16 @@ class ViajesPage(QWidget):
     def _apply_responsive(self, force: bool = False) -> None:
         mode = responsive_mode(self.width(), self.height())
         compact = mode != "wide"
-        if not force and mode == self._responsive_mode:
+        if not force and mode == self._responsive_mode and self.width() == getattr(self, "_responsive_width", None):
             return
         self._responsive_mode = mode
+        self._responsive_width = self.width()
         self._compact = compact
         direction = QBoxLayout.Direction.TopToBottom if compact else QBoxLayout.Direction.LeftToRight
         self.toolbar_layout.setDirection(direction)
         # Navegación principal compacta y estable. En vertical ocultamos los
         # accesos secundarios en vez de estirar/apilar la barra completa.
-        self.week_layout.setDirection(QBoxLayout.Direction.LeftToRight)
+        self.week_layout.setDirection(QBoxLayout.Direction.TopToBottom if self.width() < 560 else QBoxLayout.Direction.LeftToRight)
         show_secondary = mode == "wide"
         self.saved_label.setVisible(show_secondary)
         self.date_label.setVisible(show_secondary)
@@ -336,12 +348,13 @@ class ViajesPage(QWidget):
 
         self.toolbar_host.setMaximumWidth(1020 if mode == "wide" else 760 if mode == "compact" else 520)
         self.search.setMinimumWidth(650 if mode == "wide" else 0)
+        self.toolbar_host.setMinimumWidth(min(650, max(220, self.width() - 70)))
         self._layout_metric_cards(mode)
         self.trips_tree.set_compact(compact)
         if hasattr(self.extras_view, "set_compact"):
             self.extras_view.set_compact(compact)
         margins = 12 if mode == "narrow" else 18 if compact else 28
-        self.layout().setContentsMargins(margins, 16 if compact else 24, margins, 18 if compact else 28)
+        getattr(self, "_content_layout", self.layout()).setContentsMargins(margins, 16 if compact else 24, margins, 18 if compact else 28)
         self.refresh_trips()
         self.refresh_extras()
 
@@ -364,7 +377,7 @@ class ViajesPage(QWidget):
 
         cards = self._metric_cards()
         columns = len(cards) if mode == "wide" else min(4, len(cards)) if mode == "compact" else min(2, len(cards))
-        columns = max(1, columns)
+        columns = max(1, min(columns, max(1, (self.width() - 48) // 170)))
         for col in range(12):
             self.stats_layout.setColumnStretch(col, 0)
         for index, card in enumerate(cards):
@@ -376,6 +389,9 @@ class ViajesPage(QWidget):
         for col in range(columns):
             self.stats_layout.setColumnStretch(col, 1)
         self.stats_host.setMaximumWidth(1180 if mode == "wide" else 820 if mode == "compact" else 520)
+        rows = (len(cards) + columns - 1) // columns
+        self.stats_host.setMinimumHeight(rows * 112 + max(0, rows - 1) * self.stats_layout.verticalSpacing())
+
 
     def _rebuild_dynamic_metrics(self) -> None:
         """Reconstruye métricas configurables sin alterar la geometría del resumen."""

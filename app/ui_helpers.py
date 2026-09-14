@@ -97,6 +97,9 @@ def fit_dialog_to_screen(
     if screen is None:
         return
     area = screen.availableGeometry()
+    if widget.minimumSizeHint().width() > area.width() * width_ratio or widget.minimumSizeHint().height() > area.height() * height_ratio:
+        ensure_page_viewport(widget)
+        widget.setMinimumSize(0, 0)
     minimum = widget.minimumSize()
     width = max(minimum.width(), min(int(preferred_width), int(area.width() * width_ratio)))
     height = max(minimum.height(), min(int(preferred_height), int(area.height() * height_ratio)))
@@ -113,3 +116,30 @@ def repolish(widget: QWidget) -> None:
     style = widget.style()
     style.unpolish(widget)
     style.polish(widget)
+
+
+def ensure_page_viewport(page: QWidget) -> None:
+    """Permite llegar a todos los controles cuando falta altura o ancho.
+
+    Conserva el widget público de la página y sus señales. Las páginas que ya
+    desplazan todo su contenido mantienen su contenedor original.
+    """
+    from PySide6.QtWidgets import QScrollArea, QFrame, QLayout
+    old = page.layout()
+    if old is None or getattr(page, "_page_viewport", None) is not None:
+        return
+    if old.count() == 1 and isinstance(old.itemAt(0).widget(), QScrollArea):
+        return
+    content = QWidget()
+    content.setLayout(old)
+    old.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
+    shell = QVBoxLayout(page)
+    shell.setContentsMargins(0, 0, 0, 0)
+    scroll = QScrollArea()
+    scroll.setFrameShape(QFrame.Shape.NoFrame)
+    scroll.setWidgetResizable(True)
+    scroll.setObjectName("PageScroll")
+    scroll.setWidget(content)
+    shell.addWidget(scroll)
+    page._page_viewport = scroll
+    page._content_layout = old

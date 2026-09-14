@@ -121,6 +121,9 @@ class ToolsPage(QWidget):
         # Flex de forma independiente (por ejemplo, en una build reducida).
         from .viajes import ViajesPage
         self.viajes = ViajesPage(db)
+        from ..ui_helpers import ensure_page_viewport
+        ensure_page_viewport(self.viajes)
+        ensure_page_viewport(self.home)
 
         self.stack.addWidget(self.home)
         self.stack.addWidget(self.flex)

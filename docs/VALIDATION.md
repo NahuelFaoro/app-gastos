@@ -125,3 +125,10 @@ No modifica el esquema de datos. El smoke de Herramientas deja de bloquear el ar
 ## v0.39.29 — Herramientas
 
 Extras y Flex comparten el componente plegable de Viajes. Extras usa una grilla sin tabla interna; las métricas de Viajes se ocultan en esa pestaña. Se verificó conservación del despliegue al editar extras y sumar envíos, selección y edición directa, geometría de Flex y arranque nativo. Capturas revisadas con datos temporales.
+
+
+## v0.39.30 — Adaptación de escritorio
+
+Contenedores de respaldo para alcanzar controles cuando falta espacio, navegación lateral desplazable y tamaño inicial limitado al área útil. Viajes calcula la altura real de su grilla y recalcula el ancho incluso dentro del mismo breakpoint. La navegación semanal se apila en ventanas angostas.
+
+`python -m scripts.check_responsive` recorre las 12 páginas y verifica métricas de Viajes en 1920x1080, 1366x768, 760x1100, 560x600 y 480x360 píxeles lógicos. Ejecutado a escala 100% y 150%. Esto no equivale a una certificación visual de todos los controles, monitores o diálogos: las tablas anchas conservan desplazamiento de respaldo.
