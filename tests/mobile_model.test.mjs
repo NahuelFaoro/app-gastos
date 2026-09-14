@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {fresh,validate,upsert,remove,balance,totals,cents} from '../mobile/model.mjs';
+const transaction=(overrides={})=>({id:'tx',kind:'expense',date:'2026-09-13',amount:12345,account:'cash',category:'food',...overrides});
+test('importes exactos y saldos de transferencias',()=>{const s=fresh();s.accounts.push({id:'bank',name:'Banco',initial:20000});upsert(s,'transactions',transaction({kind:'transfer',account:'bank',to:'cash'}));assert.equal(balance(s,'cash'),12345);assert.equal(balance(s,'bank'),7655);assert.deepEqual(totals(s,'2026-09'),{income:0,expense:0,net:0});assert.equal(cents('1234.50'),123450);});
+test('editar reemplaza y borrar conserva referencias',()=>{const s=fresh();upsert(s,'transactions',transaction());upsert(s,'transactions',transaction({amount:200}));assert.equal(s.transactions.length,1);assert.equal(balance(s,'cash'),-200);assert.throws(()=>remove(s,'accounts','cash'));remove(s,'transactions','tx');assert.equal(balance(s,'cash'),0);});
+test('respaldo rechaza formatos, referencias y fechas inválidas',()=>{assert.throws(()=>validate({schema:1}));for(const overrides of [{date:'2026-02-31'},{account:'missing'},{amount:-1},{amount:1.5},{category:'salary'}])assert.throws(()=>upsert(fresh(),'transactions',transaction(overrides)));});
+test('sin duplicados ni ciclos de categorías',()=>{const s=fresh();s.accounts.push({...s.accounts[0]});assert.throws(()=>validate(s));const t=fresh();t.categories[0].parent='food';assert.throws(()=>validate(t));});
+test('kilometraje exige un registro válido por fecha',()=>{const s=fresh();upsert(s,'mileage',{id:'km',date:'2026-09-13',start:120,end:160});assert.throws(()=>upsert(s,'mileage',{id:'km2',date:'2026-09-13',start:160,end:180}));assert.throws(()=>upsert(fresh(),'mileage',{id:'km',date:'2026-09-13',start:120,end:119}));});
+test('tarifas históricas no cambian al editar la zona',()=>{const s=fresh();s.zones[0].rate=100;s.deliveries.push({id:'d',zone:'zone-1',date:'2026-09-13',amount:100});upsert(s,'zones',{id:'zone-1',name:'Zona 1',rate:200});assert.equal(s.deliveries[0].amount,100);});

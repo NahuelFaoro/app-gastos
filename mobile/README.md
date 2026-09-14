@@ -1,0 +1,22 @@
+# App Gastos Móvil 0.1.0
+
+Versión independiente para Android e iPhone. Se publica como archivos estáticos HTTPS y se instala desde el navegador. No necesita la PC ni un servidor Python.
+
+## Primer uso
+
+Abrí el enlace con Internet y esperá que Ajustes indique disponibilidad sin conexión. La primera descarga incluye el OCR en español. Android: Instalar aplicación / Agregar a pantalla principal. Safari de iPhone: Compartir → Agregar a pantalla de inicio. Luego probá en modo avión.
+
+Incluye movimientos, ingresos, transferencias, cuentas, categorías, viajes, extras, kilometraje, Flex y respaldo JSON. OCR de imágenes y PDF escaneados procesado en el dispositivo, con borrador para revisar antes de guardar. Límite: 20 MB y 10 páginas por PDF.
+
+Los datos quedan en IndexedDB de este navegador/dispositivo. Exportá respaldos desde Ajustes: borrar datos del sitio o perder el teléfono puede borrar registros. No hay sincronización. Los respaldos son de esta versión móvil; no importa todavía SQLite del escritorio ni incluye cuotas o recurrentes. Trabajo no acredita automáticamente importes en cuentas.
+
+## Desarrollo
+
+- `python scripts/vendor_mobile.py`: dependencias fijadas, licencias y hashes.
+- `python scripts/package_mobile.py`: caché versionada y ZIP estático en dist.
+- Publicar `dist/AppGastos_Movil_0.1.0_WEB.zip` en Cloudflare Pages. Nunca publicar la base del escritorio.
+- Servidor de pruebas: `python -m http.server 8767 --bind 127.0.0.1 --directory mobile`.
+- `node --test tests/mobile_model.test.mjs`: pruebas de modelo.
+- `node scripts/check_mobile.cjs`: persistencia, viajes, tamaños y OCR PNG/PDF offline. Requiere Playwright/Chrome y fixtures sintéticos build/mobile-receipt.png y .pdf. BASE_URL permite probar un despliegue en perfil vacío.
+
+Validado automáticamente en Chromium. Pendiente validar instalación, rendimiento y tickets reales en Android e iPhone físicos.

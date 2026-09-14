@@ -1,0 +1,25 @@
+{
+  "id": "./",
+  "name": "App Gastos M\u00f3vil",
+  "short_name": "Gastos",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0c1018",
+  "theme_color": "#10151f",
+  "description": "Finanzas y trabajo guardados en tu tel\u00e9fono, sin depender de una PC.",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
