@@ -1,6 +1,9 @@
 [
   "app.css",
   "app.mjs",
+  "cloud-client.mjs",
+  "cloud-config.mjs",
+  "cloud-ui.mjs",
   "dashboard.mjs",
   "design.mjs",
   "desktop-ui.mjs",
@@ -24,6 +27,7 @@
   "periods.mjs",
   "planning.mjs",
   "storage.mjs",
+  "sync-engine.mjs",
   "sync-merge.mjs",
   "transactions-ui.mjs",
   "vendor/languages/LICENSE",

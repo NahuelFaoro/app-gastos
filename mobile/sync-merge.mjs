@@ -1,7 +1,7 @@
 // Three-way record merge. Deletion is represented by absence relative to base.
 // Never use device clocks or silently prefer a conflicting financial value.
 export const syncCollections=['accounts','categories','transactions','trips','extras','mileage','zones','deliveries','recurring','installments','budgets','review','adjustments','workFields'];
-export function canonical(value){if(value===undefined)return 'undefined';if(Array.isArray(value))return '['+value.map(canonical).join(',')+']';if(value&&typeof value==='object')return '{'+Object.keys(value).sort().map(k=>JSON.stringify(k)+':'+canonical(value[k])).join(',')+'}';return JSON.stringify(value);}
+export function canonical(value){if(value===undefined)return 'undefined';if(Array.isArray(value))return '['+value.map(canonical).join(',')+']';if(value&&typeof value==='object')return '{'+Object.keys(value).filter(k=>value[k]!==undefined).sort().map(k=>JSON.stringify(k)+':'+canonical(value[k])).join(',')+'}';return JSON.stringify(value);}
 export function mergeCopies(base,local,remote){
  const merged=structuredClone(local),conflicts=[];
  for(const collection of syncCollections){

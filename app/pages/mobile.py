@@ -9,7 +9,7 @@ from PySide6.QtCore import QUrl
 
 from ..mobile_server import MobileServer, MobileServerError, ensure_mobile_credentials, rotate_pair_code
 from ..layouts import responsive_mode
-from .common import page_header
+from .common import page_header, scroll_container
 
 
 class MobileSyncPage(QWidget):
@@ -23,7 +23,8 @@ class MobileSyncPage(QWidget):
         self._compact = False
         self.external_change.connect(self._mobile_data_changed)
 
-        root = QVBoxLayout(self)
+        outer = QVBoxLayout(self); outer.setContentsMargins(0,0,0,0)
+        scroll, _, root = scroll_container(); outer.addWidget(scroll); self.root_layout = root
         root.setContentsMargins(28, 24, 28, 28)
         root.setSpacing(16)
         root.addWidget(page_header("Móvil", "PWA sincronizada con App Gastos Desktop"))
@@ -69,10 +70,13 @@ class MobileSyncPage(QWidget):
         independent = QFrame(); independent.setObjectName("Card")
         il = QVBoxLayout(independent); il.setContentsMargins(22, 20, 22, 20)
         it = QLabel("Versión independiente · Android e iPhone"); it.setObjectName("SectionTitle"); il.addWidget(it)
-        info = QLabel("Funciona con la PC apagada. Exportá tus datos y abrí Ajustes → Importar copia en el teléfono. Es un traspaso manual; los cambios posteriores todavía no se sincronizan automáticamente.")
+        info = QLabel("Funciona con la PC apagada. Exportá tus datos y abrí Ajustes → Importar copia en el teléfono. La importación es manual. Para intercambiar cambios automáticamente usá la misma cuenta en ambos dispositivos y activá la sincronización.")
         info.setWordWrap(True); info.setObjectName("Muted"); il.addWidget(info)
         open_pwa = QPushButton("Abrir App Gastos Móvil"); open_pwa.clicked.connect(lambda: QDesktopServices.openUrl(QUrl("https://app-gastos-movil.pages.dev/"))); il.addWidget(open_pwa)
         export_pwa = QPushButton("Exportar datos para el teléfono"); export_pwa.clicked.connect(self.export_independent); il.addWidget(export_pwa)
+        from ..cloud_panel import CloudSyncPanel
+        cloud = CloudSyncPanel(db, self); cloud.data_changed.connect(self._mobile_data_changed)
+        root.addWidget(cloud)
         root.addWidget(independent)
         root.addWidget(hero)
 
@@ -134,7 +138,7 @@ class MobileSyncPage(QWidget):
         self.code_layout.setDirection(direction)
         self.actions_layout.setDirection(direction)
         margins = 14 if compact else 28
-        self.layout().setContentsMargins(margins, 18 if compact else 24, margins, 20 if compact else 28)
+        self.root_layout.setContentsMargins(margins, 18 if compact else 24, margins, 20 if compact else 28)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)

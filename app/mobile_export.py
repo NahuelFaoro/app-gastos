@@ -11,11 +11,11 @@ TABLES = ('accounts', 'categories', 'transactions', 'budgets', 'recurring_transa
 def cents(value):
     return int((Decimal(str(value or 0))*100).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
 
-def export_mobile(db):
+def export_mobile(db, identity=None):
     with db.connect() as con:
         con.execute('BEGIN')
         tables = {name: [dict(row) for row in con.execute(f'SELECT * FROM {name}')] for name in TABLES}
-    identity = lambda table, value: f'desktop:{table}:{value}' if value is not None else ''
+    identity = identity or (lambda table, value: f'desktop:{table}:{value}' if value is not None else '')
     def ref(table, value): return identity(table, value)
     def base(row, table): return {'id':ref(table,row['id']), 'desktop':row}
     def tx(row):
@@ -34,7 +34,7 @@ def export_mobile(db):
     for c in tables['categories']:
         s['categories'].append({**base(c,'categories'),'name':c['name'],'kind':c['kind'],'parent':ref('categories',c['parent_id']),
             'color':c['color'],'secondary_color':c.get('secondary_color'),'icon':c['icon']})
-    for t in tables['transactions']:s['transactions'].append({**base(t,'transactions'),**tx(t),'date':t['tx_date']})
+    for t in tables['transactions']:s['transactions'].append({**base(t,'transactions'),**tx(t),'date':t['tx_date'],'recurring':ref('recurring_transactions',t.get('recurring_id')),'installment':ref('card_installment_plans',t.get('installment_plan_id')),'number':t.get('installment_number')})
     for a in tables['account_adjustments']:s['adjustments'].append({**base(a,'account_adjustments'),'account':ref('accounts',a['account_id']),'amount':cents(a['amount']),'date':a['adjustment_date']})
     for r in tables['recurring_transactions']:
         s['recurring'].append({**base(r,'recurring_transactions'),**tx(r),'next_date':r['next_date'],'frequency':r['frequency'],

@@ -1,6 +1,6 @@
 import {desktopCategories} from './design.mjs';
 import {validatePlanning} from './planning.mjs';
-export const VERSION = '0.4.0';
+export const VERSION = '0.5.0';
 export const collections = ['accounts','categories','transactions','trips','extras','mileage','zones','deliveries'];
 export const uid = () => crypto.randomUUID();
 export const today = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
@@ -27,7 +27,7 @@ export function validate(s){
 }
 export function rawBalance(s,id){return s.transactions.reduce((n,t)=>n+(t.to===id&&t.kind==='transfer'?t.amount:0)+(t.account===id?(t.kind==='income'?t.amount:-t.amount):0),(s.accounts.find(a=>a.id===id)?.initial||0)+(s.adjustments||[]).filter(a=>a.account===id).reduce((n,a)=>n+a.amount,0));}
 export function balance(s,id){const value=rawBalance(s,id);return s.accounts.find(a=>a.id===id)?.type==='Tarjeta'?Math.min(0,value):value;}
-export function historyRows(s){return (s.desktop_snapshot?.historical_monthly||[]).map(r=>({id:'history:'+r.id,kind:r.kind,date:`${r.year}-${String(r.month).padStart(2,'0')}-01`,amount:cents(r.amount),category:r.category_id!=null?'desktop:categories:'+r.category_id:(s.categories.find(c=>c.name===(r.subcategory_name||r.category_name)&&c.kind===r.kind)?.id||''),historical:true}));}
+export function historyRows(s){return (s.desktop_snapshot?.historical_monthly||[]).map(r=>({id:'history:'+r.id,kind:r.kind,date:`${r.year}-${String(r.month).padStart(2,'0')}-01`,amount:cents(r.amount),category:r._cloud_category|| (r.category_id!=null?'desktop:categories:'+r.category_id:(s.categories.find(c=>c.name===(r.subcategory_name||r.category_name)&&c.kind===r.kind)?.id||'')),historical:true}));}
 export function totals(s,month){const rows=[...s.transactions,...historyRows(s)].filter(t=>t.date.startsWith(month));const income=rows.filter(t=>t.kind==='income').reduce((n,t)=>n+t.amount,0);const expense=rows.filter(t=>t.kind==='expense').reduce((n,t)=>n+t.amount,0);return {income,expense,net:income-expense};}
 export function upsert(s,key,row){const i=s[key].findIndex(r=>r.id===row.id);if(i<0)s[key].push(row);else s[key][i]=row;return validate(s);}
 export function remove(s,key,id){
