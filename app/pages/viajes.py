@@ -14,7 +14,7 @@ restauraciones de forma automática.
 
 from datetime import date, timedelta
 
-from PySide6.QtCore import QDate, Qt, Signal
+from PySide6.QtCore import QDate, Qt, Signal, QTimer
 from PySide6.QtWidgets import (
     QBoxLayout,
     QComboBox,
@@ -258,7 +258,7 @@ class ViajesPage(QWidget):
         layout.setContentsMargins(0, 8, 0, 0)
         layout.setSpacing(8)
 
-        hint = QLabel("Abrí un día para ver sus viajes. Un clic selecciona una fila; otro clic sobre la misma la deselecciona. Doble clic abre la edición.")
+        hint = QLabel("Abrí un día para ver los recorridos. Las casillas guardan los cambios al marcarlas; usá Editar para modificar el viaje.")
         hint.setObjectName("SmallMuted")
         hint.setWordWrap(True)
         layout.addWidget(hint)
@@ -266,6 +266,7 @@ class ViajesPage(QWidget):
         self.trips_tree = TripsByDayView()
         self.trips_tree.tripDoubleClicked.connect(self._trip_double_clicked)
         self.trips_tree.selectionChanged.connect(self._trip_selection_changed)
+        self.trips_tree.fieldChanged.connect(self._update_trip_check)
         layout.addWidget(self.trips_tree, 1)
         return page
 
@@ -586,6 +587,28 @@ class ViajesPage(QWidget):
             selected = trip_id is not None
             self.edit_button.setEnabled(selected)
             self.delete_button.setEnabled(selected)
+
+    def _update_trip_check(self, trip_id: int, definition: dict, checked: bool) -> None:
+        trip = self.db.work_trip(trip_id)
+        if not trip:
+            self.refresh_trips()
+            return
+        scroll = self.trips_tree.scroll.verticalScrollBar().value()
+        key = definition.get("built_in_key")
+        if key:
+            trip[key] = checked
+        else:
+            trip["custom_fields"] = dict(trip.get("custom_fields") or {})
+            trip["custom_fields"][int(definition["id"])] = checked
+        try:
+            self.db.update_work_trip(trip_id, trip)
+        except Exception as exc:
+            QMessageBox.warning(self, "No se pudo guardar", str(exc))
+            self.refresh_trips()
+        else:
+            self.refresh()
+            self.data_changed.emit()
+        QTimer.singleShot(0, lambda: self.trips_tree.scroll.verticalScrollBar().setValue(scroll))
 
     def _trip_double_clicked(self, trip_id: int) -> None:
         trip = self.db.work_trip(trip_id)

@@ -11,17 +11,18 @@ from collections import defaultdict
 from datetime import date
 
 from PySide6.QtCore import QSize, Qt, Signal
-from PySide6.QtGui import QColor, QKeyEvent
+from PySide6.QtGui import QKeyEvent, QPainter, QPen, QPalette
 from PySide6.QtWidgets import (
-    QAbstractItemView,
+    QCheckBox,
+    QStyle,
+    QStyleOptionButton,
+    QGridLayout,
+    QPushButton,
     QFrame,
     QHBoxLayout,
-    QHeaderView,
     QLabel,
     QScrollArea,
     QSizePolicy,
-    QTableWidget,
-    QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
@@ -256,82 +257,119 @@ class DayGroupHeader(QFrame):
         super().keyPressEvent(event)
 
 
-class TripCompactCard(QFrame):
-    """Representación vertical de un viaje para pantallas angostas.
+class TripCheckBox(QCheckBox):
+    """Casilla con tilde visible además del color de selección."""
 
-    Evita columnas horizontales y conserva la misma información mediante
-    bloques de texto y chips. Así los campos personalizados no pueden romper la
-    composición de monitores verticales.
-    """
+    def paintEvent(self, event) -> None:
+        super().paintEvent(event)
+        if not self.isChecked():
+            return
+        option = QStyleOptionButton()
+        self.initStyleOption(option)
+        rect = self.style().subElementRect(QStyle.SubElement.SE_CheckBoxIndicator, option, self)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setPen(QPen(self.palette().color(QPalette.ColorRole.HighlightedText), 2,
+                            Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
+        painter.drawLine(rect.left() + 4, rect.center().y(), rect.left() + 7, rect.bottom() - 4)
+        painter.drawLine(rect.left() + 7, rect.bottom() - 4, rect.right() - 3, rect.top() + 4)
+        painter.end()
+
+
+class TripCompactCard(QFrame):
+    """Registro de viaje, con lectura por bloques y edición directa de checks."""
 
     clicked = Signal(int)
     doubleClicked = Signal(int)
+    fieldChanged = Signal(int, object, bool)
 
     def __init__(self, trip: dict, field_definitions: list[dict], symbol: str, hidden_amounts: bool, parent=None):
         super().__init__(parent)
-        self.trip = trip
         self.trip_id = int(trip["id"])
         self.setObjectName("WorkTripCompactCard")
-        self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setProperty("selected", False)
-
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         root = QVBoxLayout(self)
-        root.setContentsMargins(12, 10, 12, 10)
-        root.setSpacing(7)
+        root.setContentsMargins(18, 14, 18, 14)
+        root.setSpacing(10)
 
         top = QHBoxLayout()
         client = QLabel(str(trip.get("client") or "Sin cliente"))
         client.setObjectName("TransactionTitle")
-        charged = QLabel("—" if trip.get("charged") is None else money(trip.get("charged") or 0, symbol, hidden_amounts))
-        charged.setObjectName("TransactionAmount")
+        client.setWordWrap(True)
+        client.setMinimumWidth(0)
         top.addWidget(client, 1)
+        charged = QLabel("Sin importe" if trip.get("charged") is None else money(trip.get("charged") or 0, symbol, hidden_amounts))
+        charged.setObjectName("SmallMuted" if trip.get("charged") is None else "TransactionAmount")
         top.addWidget(charged)
+        self.edit_button = QPushButton("Editar")
+        self.edit_button.setObjectName("GhostButton")
+        self.edit_button.setToolTip("Editar este viaje")
+        self.edit_button.clicked.connect(lambda: self.doubleClicked.emit(self.trip_id))
+        top.addWidget(self.edit_button)
         root.addLayout(top)
 
-        route_bits: list[str] = []
-        if trip.get("origin"):
-            route_bits.append(str(trip["origin"]))
         destinations = [str(x) for x in trip.get("destinations") or [] if str(x).strip()]
-        if destinations:
-            route_bits.append(" → ".join(destinations))
-        route = QLabel("\n".join(route_bits) if route_bits else "Sin recorrido detallado")
-        route.setObjectName("SmallMuted")
-        route.setWordWrap(True)
-        root.addWidget(route)
+        count = TripsByDayView.stop_count(trip)
+        for caption, value in (
+            ("Desde", str(trip.get("origin") or "Sin origen")),
+            (f"{count} parada" if count == 1 else f"{count} paradas", "  →  ".join(destinations) or "Sin destinos detallados"),
+        ):
+            row = QHBoxLayout()
+            label = QLabel(caption)
+            label.setObjectName("SmallMuted")
+            label.setFixedWidth(76)
+            value_label = QLabel(value)
+            value_label.setTextFormat(Qt.TextFormat.PlainText)
+            value_label.setWordWrap(True)
+            value_label.setMinimumWidth(0)
+            row.addWidget(label, 0, Qt.AlignmentFlag.AlignTop)
+            row.addWidget(value_label, 1)
+            root.addLayout(row)
 
-        chips_host = QWidget()
-        chips = FlowLayout(chips_host, horizontal_spacing=6, vertical_spacing=5)
-        stop_count = max(1, int(trip.get("stop_count") or len(destinations) or 1))
-        chip_values = [f"{stop_count} parada" if stop_count == 1 else f"{stop_count} paradas"]
+        host = QWidget()
+        flow = FlowLayout(host, horizontal_spacing=18, vertical_spacing=8)
+        self.checks = {}
         custom_values = trip.get("custom_fields") or {}
         for definition in field_definitions:
-            field_type = str(definition.get("field_type") or "")
-            built_in = definition.get("built_in_key")
             field_id = int(definition["id"])
-            value = trip.get(built_in) if built_in else custom_values.get(field_id)
-            if field_type == "check":
-                if value:
-                    chip_values.append(str(definition.get("label") or "Sí"))
-            elif value not in (None, "", 0, 0.0):
-                if field_type == "money":
-                    shown = money(float(value), symbol, hidden_amounts)
-                else:
-                    shown = str(value)
-                chip_values.append(f"{definition.get('label')}: {shown}")
+            key = definition.get("built_in_key")
+            value = trip.get(key) if key else custom_values.get(field_id)
+            if definition.get("field_type") == "check":
+                check = TripCheckBox(str(definition.get("label") or "Opción"))
+                check.setObjectName("WorkTripCheck")
+                check.setChecked(bool(value))
+                check.setCursor(Qt.CursorShape.PointingHandCursor)
+                check.setToolTip("Marcar o desmarcar guarda el cambio")
+                check.toggled.connect(lambda checked, d=dict(definition): self.fieldChanged.emit(self.trip_id, d, checked))
+                self.checks[field_id] = check
+                flow.addWidget(check)
+            elif value not in (None, ""):
+                shown = money(float(value), symbol, hidden_amounts) if definition.get("field_type") == "money" else str(value)
+                label = QLabel(f"{definition.get('label')}: {shown}")
+                label.setObjectName("WorkDayChip")
+                flow.addWidget(label)
+        if flow.count():
+            root.addWidget(host)
+        else:
+            host.deleteLater()
         if trip.get("calculated_price") is not None:
             scheme = trip.get("rate_scheme") or {}
-            chip_values.append(f"{scheme.get('name') or 'Tarifa'}: {money(float(trip['calculated_price']), symbol, hidden_amounts)}")
-        for value in chip_values:
-            chip = QLabel(value)
-            chip.setObjectName("WorkDayChip")
-            chips.addWidget(chip)
-        root.addWidget(chips_host)
-
+            label = QLabel(f"{scheme.get('name') or 'Tarifa'} · {money(float(trip['calculated_price']), symbol, hidden_amounts)}")
+            label.setObjectName("SmallMuted")
+            label.setWordWrap(True)
+            root.addWidget(label)
         if trip.get("details"):
             details = QLabel(str(trip["details"]))
             details.setObjectName("SmallMuted")
             details.setWordWrap(True)
+            details.setTextFormat(Qt.TextFormat.PlainText)
             root.addWidget(details)
+        # Las etiquetas dejan pasar el clic al registro; los controles conservan
+        # sus propias acciones, sin seleccionar ni abrir el diálogo al marcar.
+        for label in self.findChildren(QLabel):
+            label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
 
     def set_selected(self, selected: bool) -> None:
         self.setProperty("selected", bool(selected))
@@ -350,91 +388,44 @@ class TripCompactCard(QFrame):
             return
         super().mouseDoubleClickEvent(event)
 
+    def keyPressEvent(self, event) -> None:
+        if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+            self.doubleClicked.emit(self.trip_id)
+            event.accept()
+        elif event.key() == Qt.Key.Key_Space:
+            self.clicked.emit(self.trip_id)
+            event.accept()
+        else:
+            super().keyPressEvent(event)
+
 
 class DayGroupCard(QFrame):
-    """Una jornada plegable con encabezado visual y tabla sólo al expandirse."""
+    """Jornada plegable sin tabla ni desplazamiento interno."""
 
     tripSelected = Signal(int)
     tripDoubleClicked = Signal(int)
-
-    COLUMNS = (
-        "Cliente",
-        "Origen",
-        "Paradas",
-        "Destino(s)",
-        "Bulto",
-        "Lluvia",
-        "Flex",
-        "Propio",
-        "Detalles",
-        "Cobrado",
-    )
+    fieldChanged = Signal(int, object, bool)
 
     def __init__(self, day: date, parent=None):
         super().__init__(parent)
         self.day = day
         self.setObjectName("WorkDayCard")
         self._expanded = False
-
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
-
         self.header = DayGroupHeader()
         self.header.clicked.connect(self.toggle)
         root.addWidget(self.header)
-
         self.body = QWidget()
-        body_layout = QVBoxLayout(self.body)
-        body_layout.setContentsMargins(10, 0, 10, 10)
-        body_layout.setSpacing(0)
-
-        self.table = QTableWidget(0, len(self.COLUMNS))
-        self.table.setObjectName("WorkDayTable")
-        self.table.setHorizontalHeaderLabels(list(self.COLUMNS))
-        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self.table.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
-        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.table.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        self.table.verticalHeader().setVisible(False)
-        self.table.setAlternatingRowColors(False)
-        self.table.setShowGrid(False)
-        self.table.cellClicked.connect(self._selected)
-        self.table.cellDoubleClicked.connect(self._double_clicked)
-
-        header = self.table.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-        header.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
-        header.setSectionResizeMode(8, QHeaderView.ResizeMode.Stretch)
-        header.setStretchLastSection(False)
-        centered = {2, 4, 5, 6, 7}
-        for column in range(len(self.COLUMNS)):
-            item = self.table.horizontalHeaderItem(column)
-            if item is None:
-                continue
-            alignment = Qt.AlignmentFlag.AlignCenter if column in centered else Qt.AlignmentFlag.AlignLeft
-            if column == 9:
-                alignment = Qt.AlignmentFlag.AlignRight
-            item.setTextAlignment(alignment | Qt.AlignmentFlag.AlignVCenter)
-
-        self.compact_host = QWidget()
-        self.compact_layout = QVBoxLayout(self.compact_host)
-        self.compact_layout.setContentsMargins(0, 4, 0, 0)
-        self.compact_layout.setSpacing(7)
-        self.compact_host.setVisible(False)
-        body_layout.addWidget(self.compact_host)
+        self.compact_layout = QGridLayout(self.body)
+        self._columns = 0
+        self.compact_layout.setContentsMargins(10, 10, 10, 10)
+        self.compact_layout.setSpacing(8)
         self._compact_cards: list[TripCompactCard] = []
-
-        self.empty = QLabel("Sin viajes")
-        self.empty.setObjectName("WorkDayEmpty")
-        self.empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.empty.setMinimumHeight(48)
-
-        body_layout.addWidget(self.table)
-        body_layout.addWidget(self.empty)
         root.addWidget(self.body)
-        self.body.setVisible(False)
-        self._selected_row: int | None = None
+        self.body.hide()
 
     def set_expanded(self, expanded: bool) -> None:
         self._expanded = bool(expanded)
@@ -447,158 +438,55 @@ class DayGroupCard(QFrame):
     def is_expanded(self) -> bool:
         return self._expanded
 
-    def set_rows(
-        self,
-        rows: list[dict],
-        symbol: str,
-        hidden_amounts: bool,
-        *,
-        empty_text: str = "Sin viajes",
-        compact: bool = False,
-        field_definitions: list[dict] | None = None,
-    ) -> None:
-        self._selected_row = None
-        field_definitions = field_definitions or []
-        self.table.setRowCount(len(rows))
-        self.empty.setText(empty_text)
-        self.empty.setVisible(not rows)
-        self.table.setVisible(bool(rows) and not compact)
-        self.compact_host.setVisible(bool(rows) and compact)
-
+    def set_rows(self, rows: list[dict], symbol: str, hidden_amounts: bool, *,
+                 empty_text: str = "Sin viajes", compact: bool = False,
+                 field_definitions: list[dict] | None = None) -> None:
         while self.compact_layout.count():
-            item = self.compact_layout.takeAt(0)
-            widget = item.widget()
+            widget = self.compact_layout.takeAt(0).widget()
             if widget is not None:
+                widget.hide()
                 widget.deleteLater()
         self._compact_cards = []
-
-        builtin_defs = {str(d.get("built_in_key")): d for d in field_definitions if d.get("built_in_key")}
-        custom_defs = [d for d in field_definitions if not d.get("built_in_key")]
-        labels = {
-            "bulky": str((builtin_defs.get("bulky") or {}).get("label") or "Bulto"),
-            "rain": str((builtin_defs.get("rain") or {}).get("label") or "Lluvia"),
-            "flex": str((builtin_defs.get("flex") or {}).get("label") or "Flex"),
-            "own_client": str((builtin_defs.get("own_client") or {}).get("label") or "Propio"),
-        }
-        headers = list(self.COLUMNS)
-        headers[4] = labels["bulky"]
-        headers[5] = labels["rain"]
-        headers[6] = labels["flex"]
-        headers[7] = labels["own_client"]
-        headers[8] = "Datos / detalles"
-        self.table.setHorizontalHeaderLabels(headers)
-
-        for row_index, trip in enumerate(rows):
-            destinations = trip.get("destinations") or []
-            stop_count = TripsByDayView.stop_count(trip)
-            charged = "—" if trip.get("charged") is None else money(trip.get("charged") or 0, symbol, hidden_amounts)
-            custom_values = trip.get("custom_fields") or {}
-            info_bits: list[str] = []
-            for definition in custom_defs:
-                value = custom_values.get(int(definition["id"]))
-                if value in (None, "", False, 0, 0.0):
-                    continue
-                if definition.get("field_type") == "check":
-                    info_bits.append(str(definition.get("label") or "Sí"))
-                elif definition.get("field_type") == "money":
-                    info_bits.append(f"{definition.get('label')}: {money(float(value), symbol, hidden_amounts)}")
-                else:
-                    info_bits.append(f"{definition.get('label')}: {value}")
-            if trip.get("calculated_price") is not None:
-                scheme = trip.get("rate_scheme") or {}
-                info_bits.append(f"{scheme.get('name') or 'Tarifa'}: {money(float(trip['calculated_price']), symbol, hidden_amounts)}")
-            if trip.get("details"):
-                info_bits.append(str(trip["details"]))
-            values = [
-                trip.get("client") or "—",
-                trip.get("origin") or "—",
-                str(stop_count),
-                "\n".join(destinations) or "—",
-                "Sí" if trip.get("bulky") else "No",
-                "Sí" if trip.get("rain") else "No",
-                "Sí" if trip.get("flex") else "No",
-                "Sí" if trip.get("own_client") else "No",
-                " · ".join(info_bits) or "—",
-                charged,
-            ]
-            for column, value in enumerate(values):
-                item = QTableWidgetItem(str(value))
-                if column == 0:
-                    item.setData(Qt.ItemDataRole.UserRole, int(trip["id"]))
-                if column in (2, 4, 5, 6, 7):
-                    item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-                elif column == 9:
-                    item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-                self.table.setItem(row_index, column, item)
-
-            card = TripCompactCard(trip, field_definitions, symbol, hidden_amounts)
+        for trip in rows:
+            card = TripCompactCard(trip, field_definitions or [], symbol, hidden_amounts)
             card.clicked.connect(self.tripSelected.emit)
             card.doubleClicked.connect(self.tripDoubleClicked.emit)
-            self.compact_layout.addWidget(card)
+            card.fieldChanged.connect(self.fieldChanged.emit)
             self._compact_cards.append(card)
+        if not rows:
+            empty = QLabel(empty_text)
+            empty.setObjectName("WorkDayEmpty")
+            empty.setMinimumHeight(40)
+            self.compact_layout.addWidget(empty, 0, 0)
+        self._arrange_cards()
 
-        self.table.resizeRowsToContents()
-        if rows and not compact:
-            header_height = self.table.horizontalHeader().height()
-            rows_height = sum(self.table.rowHeight(row) for row in range(self.table.rowCount()))
-            desired = header_height + rows_height + 8
-            self.table.setMinimumHeight(min(430, max(92, desired)))
-            self.table.setMaximumHeight(min(430, max(92, desired)))
-        elif compact:
-            self.table.setMinimumHeight(0)
-            self.table.setMaximumHeight(0)
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        self._arrange_cards()
+
+    def _arrange_cards(self) -> None:
+        if not self._compact_cards:
+            return
+        columns = max(1, min(3, self.width() // 540))
+        for card in self._compact_cards:
+            self.compact_layout.removeWidget(card)
+        for column in range(max(self._columns, columns)):
+            self.compact_layout.setColumnStretch(column, 1 if column < columns else 0)
+        for index, card in enumerate(self._compact_cards):
+            self.compact_layout.addWidget(card, index // columns, index % columns, Qt.AlignmentFlag.AlignTop)
+        self._columns = columns
 
     def clear_selection(self) -> None:
-        self._apply_row_selection(None)
         for card in self._compact_cards:
             card.set_selected(False)
 
     def select_trip(self, trip_id: int) -> bool:
         found = False
-        for row in range(self.table.rowCount()):
-            if self._trip_id_for_row(row) == int(trip_id):
-                self._apply_row_selection(row)
-                found = True
-                break
         for card in self._compact_cards:
             selected = card.trip_id == int(trip_id)
             card.set_selected(selected)
             found = found or selected
         return found
-
-    def _apply_row_selection(self, row: int | None) -> None:
-        rows_to_refresh = {self._selected_row, row}
-        self._selected_row = row if row is not None and 0 <= row < self.table.rowCount() else None
-        selected_color = QColor(132, 122, 255, 36)
-        clear_color = QColor(0, 0, 0, 0)
-        for row_index in rows_to_refresh:
-            if row_index is None or not (0 <= row_index < self.table.rowCount()):
-                continue
-            is_selected = row_index == self._selected_row
-            for column in range(self.table.columnCount()):
-                item = self.table.item(row_index, column)
-                if item is None:
-                    continue
-                item.setBackground(selected_color if is_selected else clear_color)
-
-    def _trip_id_for_row(self, row: int) -> int | None:
-        item = self.table.item(row, 0)
-        if item is None:
-            return None
-        try:
-            return int(item.data(Qt.ItemDataRole.UserRole))
-        except (TypeError, ValueError):
-            return None
-
-    def _selected(self, row: int, _column: int) -> None:
-        trip_id = self._trip_id_for_row(row)
-        if trip_id is not None:
-            self.tripSelected.emit(trip_id)
-
-    def _double_clicked(self, row: int, _column: int) -> None:
-        trip_id = self._trip_id_for_row(row)
-        if trip_id is not None:
-            self.tripDoubleClicked.emit(trip_id)
 
 
 class TripsByDayView(QWidget):
@@ -606,6 +494,7 @@ class TripsByDayView(QWidget):
 
     tripDoubleClicked = Signal(int)
     selectionChanged = Signal(object)
+    fieldChanged = Signal(int, object, bool)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -663,6 +552,7 @@ class TripsByDayView(QWidget):
             item = self.host_layout.takeAt(0)
             widget = item.widget()
             if widget is not None:
+                widget.hide()
                 widget.deleteLater()
         self._cards = {}
 
@@ -702,6 +592,7 @@ class TripsByDayView(QWidget):
             )
             card.tripSelected.connect(lambda trip_id, source=card: self._select_trip(source, trip_id))
             card.tripDoubleClicked.connect(self.tripDoubleClicked.emit)
+            card.fieldChanged.connect(self.fieldChanged.emit)
             # Primera carga: todo plegado. Después respetamos exactamente lo que
             # el usuario haya abierto/cerrado durante esa semana.
             card.set_expanded(day_iso in expanded_days if self._has_populated else False)

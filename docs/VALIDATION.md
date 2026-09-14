@@ -111,3 +111,12 @@ Se agregó una prueba estructural para garantizar que `FlowLayout.addWidget` ace
 ## v0.39.17
 
 No modifica el esquema de datos. El smoke de Herramientas deja de bloquear el arranque por geometrías provisionales y pasa a validar estructura de grilla después de activar realmente la página. La normalización de fuente Qt evita tamaños tipográficos indefinidos en Windows.
+
+
+## v0.39.28 — Viajes
+
+- Reemplazo de la tabla por tarjetas adaptables, con una sola área de desplazamiento.
+- Casillas nativas y personalizadas guardan cambios y refrescan métricas sin borrar destinos, importes ni detalles.
+- 99 pruebas unitarias aprobadas y `APP_GASTOS_SMOKE_OK`.
+- Revisión visual con cuatro viajes a 1240 y 480 píxeles; las casillas envuelven y los recorridos largos crecen sin scroll interno.
+- El ZIP de testers v0.39.27 corresponde a la versión anterior; esta entrega actualiza el código fuente.
