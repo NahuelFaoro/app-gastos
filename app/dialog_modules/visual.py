@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
 from ..constants import CATEGORY_COLORS, CATEGORY_ICONS
 from ..icons import ICON_LABELS, draw_icon, normalize_icon
 from ..widgets import IconChoiceButton
+from ..layouts import FlowLayout
 
 class ColorSwatchButton(QAbstractButton):
     def __init__(self, color, selected=False, parent=None):
@@ -95,13 +96,14 @@ class IconPickerDialog(QDialog):
         super().__init__(parent)
         self.selected = normalize_icon(current)
         self.setWindowTitle("Elegir ícono")
-        self.resize(720, 600)
+        self.resize(780, 640)
         root = QVBoxLayout(self)
         title = QLabel("Elegí un ícono")
         title.setObjectName("SectionTitle")
         root.addWidget(title)
         subtitle = QLabel("Buscá por función. Los íconos usan el mismo estilo visual en toda la app.")
         subtitle.setObjectName("Muted")
+        subtitle.setWordWrap(True)
         root.addWidget(subtitle)
 
         self.search = QLineEdit(); self.search.setPlaceholderText("Buscar: combustible, casa, seguro, comida…")
@@ -118,16 +120,16 @@ class IconPickerDialog(QDialog):
 
     def _rebuild(self):
         query = self.search.text().strip().lower() if hasattr(self, "search") else ""
-        host = QWidget(); grid = QGridLayout(host); grid.setContentsMargins(2,2,8,8); grid.setSpacing(10)
+        host = QWidget(); grid = FlowLayout(host, horizontal_spacing=8, vertical_spacing=8); grid.setContentsMargins(2,2,8,8)
         icons = [i for i in CATEGORY_ICONS if not query or query in ICON_LABELS.get(i,i).lower() or query in i.lower()]
         for idx, icon in enumerate(icons):
             b = IconChoiceButton(icon, ICON_LABELS.get(icon, icon))
             b.setChecked(icon == self.selected)
             b.clicked.connect(lambda checked=False, x=icon: self._choose(x))
-            grid.addWidget(b, idx // 6, idx % 6)
+            grid.addWidget(b)
         if not icons:
             empty = QLabel("No encontré íconos con esa búsqueda."); empty.setObjectName("Muted")
-            grid.addWidget(empty,0,0,1,6)
+            empty.setWordWrap(True); grid.addWidget(empty)
         self.scroll.setWidget(host)
 
     def _choose(self, icon):

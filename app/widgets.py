@@ -475,7 +475,7 @@ class IconChoiceButton(QAbstractButton):
     def __init__(self, icon, label="", parent=None):
         super().__init__(parent)
         self.icon=normalize_icon(icon); self.label=label or ICON_LABELS.get(self.icon,self.icon)
-        self.setCheckable(True); self.setCursor(Qt.CursorShape.PointingHandCursor); self.setFixedSize(98,80); self.setToolTip(self.label)
+        self.setCheckable(True); self.setCursor(Qt.CursorShape.PointingHandCursor); self.setFixedSize(116,112); self.setToolTip(self.label); self.setAccessibleName(self.label)
 
     def paintEvent(self,event):
         p=QPainter(self)
@@ -485,13 +485,13 @@ class IconChoiceButton(QAbstractButton):
             if self.isChecked() or self.underMouse():
                 bg=QColor(accent); bg.setAlpha(24 if self.isChecked() else 10)
                 p.setPen(Qt.PenStyle.NoPen); p.setBrush(bg); p.drawRoundedRect(r,16,16)
-            circle=QRectF(r.center().x()-21,r.top()+7,42,42)
+            circle=QRectF(r.center().x()-32,r.top()+7,64,64)
             circle_color = QColor(accent) if self.isChecked() else QColor(accent.red(),accent.green(),accent.blue(),210)
             p.setBrush(circle_color); p.setPen(QPen(QColor(255,255,255,30), 1)); p.drawEllipse(circle)
-            draw_icon(p,circle.adjusted(10,10,-10,-10),self.icon,QColor("#FFFFFF"),2.0)
-            f=p.font(); f.setPointSize(7); f.setBold(self.isChecked()); p.setFont(f); p.setPen(text if self.isChecked() else muted)
+            draw_icon(p,circle.adjusted(6,6,-6,-6),self.icon,QColor("#FFFFFF"),2.0)
+            f=p.font(); f.setPointSize(9); f.setBold(self.isChecked()); p.setFont(f); p.setPen(text)
             fm=QFontMetrics(f); txt=fm.elidedText(self.label,Qt.TextElideMode.ElideRight,int(r.width()-8))
-            p.drawText(QRectF(r.left()+4,r.top()+54,r.width()-8,18),Qt.AlignmentFlag.AlignCenter,txt)
+            p.drawText(QRectF(r.left()+4,r.top()+78,r.width()-8,24),Qt.AlignmentFlag.AlignCenter,txt)
         finally:
             p.end()
 

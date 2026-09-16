@@ -163,7 +163,8 @@ class TransactionsPage(QWidget):
         self._search_timer = QTimer(self); self._search_timer.setSingleShot(True); self._search_timer.setInterval(140)
         self._search_timer.timeout.connect(self.refresh)
         self.search.textChanged.connect(lambda: self._search_timer.start())
-        for widget in (self.kind, self.account, self.category):
+        self.kind.currentIndexChanged.connect(self._kind_changed)
+        for widget in (self.account, self.category):
             widget.currentIndexChanged.connect(self.refresh)
         self.month.currentIndexChanged.connect(self._manual_period_changed)
         self.year.currentIndexChanged.connect(self._manual_period_changed)
@@ -196,14 +197,25 @@ class TransactionsPage(QWidget):
 
     def _load_filters(self):
         aid = self.account.currentData() if self.account.count() else None
-        cid = self.category.currentData() if self.category.count() else None
         self.account.blockSignals(True); self.account.clear(); self.account.addItem("Todas las cuentas", None)
         for account in self.db.accounts(): self.account.addItem(account["name"], account["id"])
         i=self.account.findData(aid); self.account.setCurrentIndex(i if i>=0 else 0); self.account.blockSignals(False)
+        self._load_categories()
+
+    def _kind_changed(self):
+        self._load_categories()
+        self.refresh()
+
+    def _load_categories(self):
+        cid = self.category.currentData()
+        kind = self.kind.currentData()
+        kinds = ('expense', 'income') if kind == 'all' else (kind,) if kind in ('expense', 'income') else ()
         self.category.blockSignals(True); self.category.clear(); self.category.addItem("Todas las categorías", None)
-        for category in self.db.category_choices("expense", True): self.category.addItem(category["label"], category["id"])
-        for category in self.db.category_choices("income", True): self.category.addItem(category["label"], category["id"])
+        for category_kind in kinds:
+            for category in self.db.category_choices(category_kind, True):
+                self.category.addItem(category["label"], category["id"])
         i=self.category.findData(cid); self.category.setCurrentIndex(i if i>=0 else 0); self.category.blockSignals(False)
+        self.category.setEnabled(kind != 'transfer')
 
     def _filters(self):
         return {
