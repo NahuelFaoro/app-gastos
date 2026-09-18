@@ -50,7 +50,7 @@ class MainWindow(QMainWindow):
 
     MUTATING_PAGE_KEYS = (
         "dashboard", "transactions", "calendar", "imports", "accounts",
-        "installments", "categories", "recurring", "tools", "mobile", "settings",
+        "installments", "categories", "recurring", "tools", "mobile", "settings", "stats",
     )
 
     def __init__(self, db, generated_recurring=0, generated_installments=0):

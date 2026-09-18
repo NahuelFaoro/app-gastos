@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QBoxLayout, QFrame, QGridLayout, QHBoxLayout, QLab
 
 from ..constants import MONTHS, MONTHS_SHORT
 from ..dialogs import TransactionDialog
-from ..layouts import responsive_mode
+from ..layouts import responsive_mode, AdaptiveSplitter
 from ..utils import money, percent_change
 from ..widgets import BudgetProgress, CashflowChart, DonutChart, IconBadge, TransactionRowWidget
 from .common import clear_layout, page_header, scroll_container
@@ -95,7 +95,7 @@ class DashboardPage(QWidget):
         accounts_header.addWidget(at); accounts_header.addSpacing(7); accounts_header.addWidget(ah); accounts_header.addStretch(); root.addLayout(accounts_header)
         self.wallets_grid = QGridLayout(); self.wallets_grid.setSpacing(9); root.addLayout(self.wallets_grid)
 
-        self.charts_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight); self.charts_layout.setSpacing(14)
+        self.charts_layout = AdaptiveSplitter((1,1))
         cat_card = QFrame(); cat_card.setObjectName("DashboardSection")
         cat_l = QVBoxLayout(cat_card); cat_l.setContentsMargins(20, 18, 20, 18); cat_l.setSpacing(11)
         title = QLabel("Gastos por categoría"); title.setObjectName("SectionTitle")
@@ -106,7 +106,7 @@ class DashboardPage(QWidget):
         self.cat_body.addWidget(self.category_donut, 4)
         self.category_layout = QVBoxLayout(); self.category_layout.setSpacing(4); self.cat_body.addLayout(self.category_layout, 6)
         cat_l.addLayout(self.cat_body, 1)
-        self.charts_layout.addWidget(cat_card, 1)
+        self.charts_layout.addWidget(cat_card)
 
         trend_card = QFrame(); trend_card.setObjectName("DashboardSection")
         tr = QVBoxLayout(trend_card); tr.setContentsMargins(20, 18, 20, 18); tr.setSpacing(8)
@@ -114,17 +114,17 @@ class DashboardPage(QWidget):
         th = QLabel("Ingresos y gastos para ver la tendencia, no sólo el mes actual"); th.setObjectName("SmallMuted")
         tr.addWidget(tt); tr.addWidget(th)
         self.trend = CashflowChart(); tr.addWidget(self.trend)
-        self.charts_layout.addWidget(trend_card, 1)
-        root.addLayout(self.charts_layout)
+        self.charts_layout.addWidget(trend_card)
+        root.addWidget(self.charts_layout)
 
-        self.bottom_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight); self.bottom_layout.setSpacing(14)
+        self.bottom_layout = AdaptiveSplitter((2,1))
         recent = QFrame(); recent.setObjectName("DashboardSection")
         rl = QVBoxLayout(recent); rl.setContentsMargins(20, 18, 20, 18); rl.setSpacing(7)
         rh = QHBoxLayout(); rt = QLabel("Actividad reciente"); rt.setObjectName("SectionTitle")
         rsub = QLabel("Últimos movimientos cargados"); rsub.setObjectName("SmallMuted")
         rh.addWidget(rt); rh.addSpacing(7); rh.addWidget(rsub); rh.addStretch(); rl.addLayout(rh)
         self.recent_layout = QVBoxLayout(); self.recent_layout.setSpacing(2); rl.addLayout(self.recent_layout)
-        self.bottom_layout.addWidget(recent, 2)
+        self.bottom_layout.addWidget(recent)
 
         installments = QFrame(); installments.setObjectName("DashboardSection")
         bl = QVBoxLayout(installments); bl.setContentsMargins(20, 18, 20, 18); bl.setSpacing(7)
@@ -132,8 +132,8 @@ class DashboardPage(QWidget):
         self.installment_hint = QLabel("Compromisos que siguen corriendo"); self.installment_hint.setObjectName("SmallMuted")
         bl.addWidget(bt); bl.addWidget(self.installment_hint)
         self.installment_layout = QVBoxLayout(); self.installment_layout.setSpacing(3); bl.addLayout(self.installment_layout); bl.addStretch()
-        self.bottom_layout.addWidget(installments, 1)
-        root.addLayout(self.bottom_layout)
+        self.bottom_layout.addWidget(installments)
+        root.addWidget(self.bottom_layout)
         root.addStretch()
 
         self.refresh(); self._apply_responsive()
@@ -260,8 +260,8 @@ class DashboardPage(QWidget):
         direction = QBoxLayout.Direction.TopToBottom if compact else QBoxLayout.Direction.LeftToRight
         self.header_layout.setDirection(direction)
         self.overview_layout.setDirection(direction)
-        self.charts_layout.setDirection(direction)
-        self.bottom_layout.setDirection(direction)
+        self.charts_layout.set_compact(compact)
+        self.bottom_layout.set_compact(compact)
         self.cat_body.setDirection(direction)
         self.metrics_layout.setDirection(QBoxLayout.Direction.TopToBottom if mode == "narrow" else QBoxLayout.Direction.LeftToRight)
         self.category_donut.setMaximumWidth(16777215 if compact else 235)

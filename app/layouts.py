@@ -8,7 +8,34 @@ responsividad y facilita cambiar el diseño global más adelante.
 """
 
 from PySide6.QtCore import QPoint, QRect, QSize, Qt
-from PySide6.QtWidgets import QLayout, QLayoutItem, QSizePolicy, QWidget
+from PySide6.QtWidgets import QLayout, QLayoutItem, QSizePolicy, QWidget, QSplitter
+
+
+class AdaptiveSplitter(QSplitter):
+    """Resizable panels, with independent proportions for wide and stacked views."""
+    def __init__(self, proportions=(2, 1), parent=None):
+        super().__init__(Qt.Orientation.Horizontal, parent)
+        self._panel_sizes={Qt.Orientation.Horizontal:list(proportions),Qt.Orientation.Vertical:list(proportions)}
+        self.setChildrenCollapsible(False)
+        self.setHandleWidth(12)
+        self.setObjectName('AdaptiveSplitter')
+        self.setStyleSheet('QSplitter#AdaptiveSplitter::handle { background: rgba(128,140,160,35); border-radius: 4px; } QSplitter#AdaptiveSplitter::handle:hover { background: rgba(150,145,240,140); }')
+
+    def set_compact(self, compact):
+        orientation=Qt.Orientation.Vertical if compact else Qt.Orientation.Horizontal
+        if orientation != self.orientation():
+            sizes=self.sizes()
+            if sizes and all(sizes):self._panel_sizes[self.orientation()]=sizes
+            self.setOrientation(orientation)
+            self.setSizes(self._panel_sizes[orientation])
+        for i in range(1,self.count()):
+            self.handle(i).setToolTip('Arrastrá para ajustar el tamaño de los paneles')
+
+    def showEvent(self,event):
+        super().showEvent(event)
+        if not getattr(self,'_shown',False):
+            self._shown=True
+            self.setSizes(self._panel_sizes[self.orientation()])
 
 
 class FlowLayout(QLayout):

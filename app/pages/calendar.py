@@ -6,14 +6,14 @@ from datetime import date
 from PySide6.QtCore import QDate, Qt, Signal
 from PySide6.QtWidgets import (
     QBoxLayout, QFrame, QGridLayout, QHBoxLayout, QLabel, QPushButton, QScrollArea,
-    QVBoxLayout, QWidget
+    QVBoxLayout, QWidget, QLayout
 )
 
 from ..constants import MONTHS
 from ..dialogs import TransactionDialog
 from ..utils import money
 from ..widgets import TransactionRowWidget
-from ..layouts import responsive_mode
+from ..layouts import responsive_mode, AdaptiveSplitter
 from .common import clear_layout, page_header
 
 
@@ -99,12 +99,16 @@ class CalendarPage(QWidget):
         self._compact = False
 
         root = QVBoxLayout(self)
+        root.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
         root.setContentsMargins(28, 24, 28, 28)
         root.setSpacing(14)
 
         self.top_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight)
         self.top_layout.addWidget(page_header("Calendario", "Mirá rápidamente qué días gastaste, cobraste o moviste plata"), 1)
-        top = self.top_layout
+        navigation=QWidget()
+        top=QHBoxLayout(navigation)
+        top.setContentsMargins(0,0,0,0)
+        self.top_layout.addWidget(navigation)
         prev_btn = QPushButton("‹")
         prev_btn.setObjectName("CalendarNavButton")
         prev_btn.clicked.connect(self.previous_month)
@@ -122,7 +126,7 @@ class CalendarPage(QWidget):
         top.addWidget(next_btn)
         top.addSpacing(6)
         top.addWidget(today_btn)
-        root.addLayout(top)
+        root.addLayout(self.top_layout)
 
         summary = QFrame()
         summary.setObjectName("MovementSummary")
@@ -130,15 +134,15 @@ class CalendarPage(QWidget):
         sl.setContentsMargins(14, 9, 14, 9)
         self.summary_label = QLabel()
         self.summary_label.setObjectName("Muted")
-        sl.addWidget(self.summary_label)
-        sl.addStretch()
+        self.summary_label.setWordWrap(True)
+        sl.addWidget(self.summary_label, 1)
         hint = QLabel("Clic: ver día · doble clic: agregar movimiento")
         hint.setObjectName("SmallMuted")
+        hint.setWordWrap(True)
         sl.addWidget(hint)
         root.addWidget(summary)
 
-        self.body_layout = QBoxLayout(QBoxLayout.Direction.LeftToRight)
-        self.body_layout.setSpacing(14)
+        self.body_layout = AdaptiveSplitter((3,1))
         body = self.body_layout
 
         calendar_card = QFrame()
@@ -155,13 +159,17 @@ class CalendarPage(QWidget):
         for col in range(7):
             self.grid.setColumnStretch(col, 1)
         calendar_layout.addWidget(self.grid_host)
-        body.addWidget(calendar_card, 3)
+        self.calendar_scroll=QScrollArea()
+        self.calendar_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.calendar_scroll.setWidgetResizable(True)
+        self.calendar_scroll.setMinimumHeight(180)
+        self.calendar_scroll.setWidget(calendar_card)
+        body.addWidget(self.calendar_scroll)
 
         self.detail_card = QFrame()
         detail = self.detail_card
         detail.setObjectName("Card")
         detail.setMinimumWidth(300)
-        detail.setMaximumWidth(430)
         dl = QVBoxLayout(detail)
         dl.setContentsMargins(18, 18, 18, 18)
         dl.setSpacing(10)
@@ -170,6 +178,7 @@ class CalendarPage(QWidget):
         self.detail_title.setObjectName("SectionTitle")
         self.detail_subtitle = QLabel()
         self.detail_subtitle.setObjectName("SmallMuted")
+        self.detail_subtitle.setWordWrap(True)
         dl.addWidget(self.detail_title)
         dl.addWidget(self.detail_subtitle)
 
@@ -187,9 +196,9 @@ class CalendarPage(QWidget):
         self.detail_layout.setSpacing(7)
         self.detail_scroll.setWidget(self.detail_host)
         dl.addWidget(self.detail_scroll, 1)
-        body.addWidget(detail, 1)
+        body.addWidget(detail)
 
-        root.addLayout(body, 1)
+        root.addWidget(body, 1)
         self.refresh(); self._apply_responsive()
 
     def _apply_responsive(self):
@@ -199,8 +208,7 @@ class CalendarPage(QWidget):
         self._compact = compact
         direction = QBoxLayout.Direction.TopToBottom if compact else QBoxLayout.Direction.LeftToRight
         self.top_layout.setDirection(direction)
-        self.body_layout.setDirection(direction)
-        self.detail_card.setMaximumWidth(16777215 if compact else 430)
+        self.body_layout.set_compact(compact)
         self.detail_card.setMinimumWidth(0 if compact else 300)
         margins = 14 if compact else 28
         self.layout().setContentsMargins(margins, 18 if compact else 24, margins, 20 if compact else 28)
@@ -255,6 +263,7 @@ class CalendarPage(QWidget):
                     cell.clicked.connect(self.select_day)
                     cell.add_requested.connect(self.add_transaction)
                 self.grid.addWidget(cell, row_index, col)
+        self.grid_host.setMinimumHeight(len(month_rows)*102+30)
 
         # Si la fecha seleccionada quedó fuera del mes visible, elegimos un día útil.
         try:

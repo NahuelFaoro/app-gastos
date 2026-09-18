@@ -6,7 +6,7 @@ from datetime import date, timedelta
 from PySide6.QtCore import QDate, QTimer, Qt, Signal
 from PySide6.QtWidgets import (
     QButtonGroup, QComboBox, QDialog, QFrame, QGridLayout, QHBoxLayout,
-    QLabel, QPushButton, QScrollArea, QSizePolicy, QVBoxLayout, QWidget,
+    QLabel, QPushButton, QScrollArea, QSizePolicy, QVBoxLayout, QWidget, QMessageBox,
 )
 
 from ..constants import MONTHS
@@ -17,6 +17,7 @@ from ..widgets import IconBadge
 from ..work_calendar import week_end, week_start
 from .common import clear_layout, page_header, scroll_container
 from ..date_picker import WorkDateEdit
+from ..dialogs import TransactionDialog
 
 
 WEEKDAYS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
@@ -136,6 +137,7 @@ class AnalysisCategoryRow(AnalysisDrillRow):
 
 
 class CategoryBreakdownDialog(QDialog):
+    data_changed = Signal()
     """Navegador jerárquico de Análisis sin abandonar la pantalla.
 
     Mientras una categoría tenga hijos se muestra el siguiente nivel. Al llegar
@@ -229,6 +231,9 @@ class CategoryBreakdownDialog(QDialog):
         root.addWidget(self.scroll, 1)
 
         bottom = QHBoxLayout()
+        self.add_movement = QPushButton('+ Ingreso' if self.kind=='income' else '+ Gasto')
+        self.add_movement.clicked.connect(self._add_movement)
+        bottom.addWidget(self.add_movement)
         bottom.addStretch()
         self.open_movements = QPushButton("Ver en Movimientos")
         self.open_movements.setObjectName("SecondaryButton")
@@ -236,6 +241,19 @@ class CategoryBreakdownDialog(QDialog):
         bottom.addWidget(self.open_movements)
         root.addLayout(bottom)
         self._refresh()
+
+    def _add_movement(self):
+        dialog=TransactionDialog(self.db,parent=self)
+        dialog.set_kind(self.kind)
+        dialog.category.set_category(self._category())
+        selected_date=min(max(date.today(),self.start),self.end)
+        dialog.date.setDate(QDate(selected_date.year,selected_date.month,selected_date.day))
+        if dialog.exec()!=QDialog.DialogCode.Accepted:return
+        try:self.db.add_transaction(dialog.data())
+        except Exception as exc:
+            QMessageBox.warning(self,'No se pudo guardar',str(exc));return
+        self._refresh()
+        self.data_changed.emit()
 
     def showEvent(self, event) -> None:
         super().showEvent(event)
@@ -416,6 +434,7 @@ class CategoryDistributionBar(QFrame):
 
 
 class StatisticsPage(QWidget):
+    data_changed = Signal()
     """Análisis visual centrado en categorías y períodos.
 
     La pantalla sigue el patrón de Gestor de gastos: tipo (gastos/ingresos),
@@ -652,7 +671,12 @@ class StatisticsPage(QWidget):
         start, end = self._bounds()
         dialog = CategoryBreakdownDialog(self.db, self.kind, int(category_id), start, end, self.mode, self._fmt, self)
         dialog.open_transactions_requested.connect(self.open_transactions_requested)
+        dialog.data_changed.connect(self._movement_added)
         dialog.exec()
+
+    def _movement_added(self):
+        self.refresh()
+        self.data_changed.emit()
 
     def _open_direct_movements(self, category_id: int) -> None:
         start, end = self._bounds()

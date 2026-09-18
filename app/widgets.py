@@ -525,6 +525,8 @@ class TransactionRowWidget(QFrame):
         info = QVBoxLayout(); info.setSpacing(2)
         title = QLabel(tx.get("display") or tx.get("category_display") or "Movimiento")
         title.setObjectName("TransactionTitle")
+        title.setWordWrap(True)
+        title.setMinimumWidth(0)
         info.addWidget(title)
         meta_parts = [human_date(tx["tx_date"]), tx.get("category_display") or ""]
         if tx.get("account_name"):
@@ -535,6 +537,8 @@ class TransactionRowWidget(QFrame):
             meta_parts.append("Mercado Pago")
         meta = QLabel("  ·  ".join(x for x in meta_parts if x))
         meta.setObjectName("SmallMuted")
+        meta.setWordWrap(True)
+        meta.setMinimumWidth(0)
         info.addWidget(meta)
         root.addLayout(info, 1)
 
