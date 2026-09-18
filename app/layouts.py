@@ -7,8 +7,49 @@ concreta. Mantener estos helpers fuera de las vistas evita duplicar lógica de
 responsividad y facilita cambiar el diseño global más adelante.
 """
 
-from PySide6.QtCore import QPoint, QRect, QSize, Qt
-from PySide6.QtWidgets import QLayout, QLayoutItem, QSizePolicy, QWidget, QSplitter
+from PySide6.QtCore import QPoint, QRect, QRectF, QSize, Qt
+from PySide6.QtGui import QPainter, QPalette
+from PySide6.QtWidgets import QLayout, QLayoutItem, QSizePolicy, QWidget, QSplitter, QSplitterHandle
+
+
+class SubtleSplitterHandle(QSplitterHandle):
+    """Keep the full drag target, but reveal only a small grip on interaction."""
+
+    def __init__(self, orientation, parent):
+        super().__init__(orientation, parent)
+        self._dragging = False
+
+    def paintEvent(self, event):
+        if not (self.underMouse() or self._dragging):
+            return
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        color = self.palette().color(QPalette.ColorRole.Highlight)
+        color.setAlpha(190 if self._dragging else 120)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(color)
+        width, height = (3, 28) if self.orientation() == Qt.Orientation.Horizontal else (28, 3)
+        painter.drawRoundedRect(QRectF((self.width() - width) / 2,
+                                      (self.height() - height) / 2, width, height), 1.5, 1.5)
+
+    def enterEvent(self, event):
+        super().enterEvent(event)
+        self.update()
+
+    def leaveEvent(self, event):
+        super().leaveEvent(event)
+        self.update()
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._dragging = True
+        super().mousePressEvent(event)
+        self.update()
+
+    def mouseReleaseEvent(self, event):
+        super().mouseReleaseEvent(event)
+        self._dragging = False
+        self.update()
 
 
 class AdaptiveSplitter(QSplitter):
@@ -19,7 +60,10 @@ class AdaptiveSplitter(QSplitter):
         self.setChildrenCollapsible(False)
         self.setHandleWidth(12)
         self.setObjectName('AdaptiveSplitter')
-        self.setStyleSheet('QSplitter#AdaptiveSplitter::handle { background: rgba(128,140,160,35); border-radius: 4px; } QSplitter#AdaptiveSplitter::handle:hover { background: rgba(150,145,240,140); }')
+        self.setStyleSheet('QSplitter#AdaptiveSplitter::handle { background: transparent; border: none; }')
+
+    def createHandle(self):
+        return SubtleSplitterHandle(self.orientation(), self)
 
     def set_compact(self, compact):
         orientation=Qt.Orientation.Vertical if compact else Qt.Orientation.Horizontal
