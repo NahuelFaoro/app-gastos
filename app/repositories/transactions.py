@@ -44,6 +44,11 @@ class TransactionsMixin:
             and account and account.get("type") == "Tarjeta"
         )
         with self.connect() as con:
+            if source in ('work_trip', 'work_extra') and external_id:
+                con.execute('BEGIN IMMEDIATE')
+                existing=con.execute('SELECT id FROM transactions WHERE source=? AND external_id=?',(source,external_id)).fetchone()
+                if existing:
+                    raise ValueError('Este registro ya tiene un ingreso en Movimientos. Editá ese ingreso para modificarlo.')
             if use_installments:
                 purchase_date = date.fromisoformat(self._normalize_tx_date(data["tx_date"]))
                 total_amount = float(data["amount"])

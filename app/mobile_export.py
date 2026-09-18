@@ -35,6 +35,9 @@ def export_mobile(db, identity=None):
         s['categories'].append({**base(c,'categories'),'name':c['name'],'kind':c['kind'],'parent':ref('categories',c['parent_id']),
             'color':c['color'],'secondary_color':c.get('secondary_color'),'icon':c['icon']})
     for t in tables['transactions']:s['transactions'].append({**base(t,'transactions'),**tx(t),'date':t['tx_date'],'recurring':ref('recurring_transactions',t.get('recurring_id')),'installment':ref('card_installment_plans',t.get('installment_plan_id')),'number':t.get('installment_number')})
+    for raw, exported in zip(tables['transactions'],s['transactions']):
+        if raw.get('source') in ('work_trip','work_extra') and raw.get('external_id'):
+            exported['work_origin']={'source':raw['source'],'id':raw['external_id']}
     for a in tables['account_adjustments']:s['adjustments'].append({**base(a,'account_adjustments'),'account':ref('accounts',a['account_id']),'amount':cents(a['amount']),'date':a['adjustment_date']})
     for r in tables['recurring_transactions']:
         s['recurring'].append({**base(r,'recurring_transactions'),**tx(r),'next_date':r['next_date'],'frequency':r['frequency'],

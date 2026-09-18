@@ -490,6 +490,8 @@ class TripDialog(BaseWorkDialog):
         form.addRow("", hint)
 
     def _build_actions(self, root: QVBoxLayout) -> None:
+        self.register_income = QCheckBox('Registrar lo cobrado como ingreso al guardar')
+        root.addWidget(self.register_income)
         actions = QHBoxLayout()
         actions.addStretch()
         cancel = QPushButton("Cancelar")
@@ -756,6 +758,9 @@ class ExtraDialog(BaseWorkDialog):
         form.addRow("Ganado", self.amount)
         form.addRow("Detalles", self.details)
         form.addRow("", info)
+
+        self.register_income = QCheckBox('Registrar lo ganado como ingreso al guardar')
+        root.addWidget(self.register_income)
 
         actions = QHBoxLayout()
         actions.addStretch()

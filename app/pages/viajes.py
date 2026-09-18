@@ -39,6 +39,8 @@ except Exception:
 
 from ..layouts import FlowLayout, responsive_mode
 from ..utils import money
+from ..dialogs import TransactionDialog
+from ..work_income import income_draft
 from ..work_calendar import compact_week_label, week_start
 from .common import page_header
 from .viajes_dialogs import ExtraDialog, MileageWeekDialog, TripDialog
@@ -243,6 +245,11 @@ class ViajesPage(QWidget):
         self.delete_button.clicked.connect(self.delete_selected)
         self.toolbar_layout.addWidget(self.edit_button)
         self.toolbar_layout.addWidget(self.delete_button)
+        self.income_button = QPushButton('Registrar ingreso')
+        self.income_button.setObjectName('SecondaryButton')
+        self.income_button.setToolTip('Seleccioná un viaje o extra para llevar lo cobrado a Movimientos.')
+        self.income_button.clicked.connect(self.register_selected_income)
+        self.toolbar_layout.addWidget(self.income_button)
         self.toolbar_outer.addLayout(self.toolbar_layout)
 
         # El filtro vive en su propia fila para no superponerse con búsqueda.
@@ -638,11 +645,12 @@ class ViajesPage(QWidget):
             return
         values = dialog.values()
         try:
-            self.db.add_work_trip(values)
+            trip_id = self.db.add_work_trip(values)
         except Exception as exc:
             QMessageBox.warning(self, "Viajes", str(exc))
             return
         self.current_week = monday_of(date.fromisoformat(values["trip_date"]))
+        if dialog.register_income.isChecked():self.register_work_income('trip',trip_id)
         self._sync_date()
         self.refresh()
         self.data_changed.emit()
@@ -668,6 +676,7 @@ class ViajesPage(QWidget):
             QMessageBox.warning(self, "Viajes", str(exc))
             return
         self.current_week = monday_of(date.fromisoformat(values["trip_date"]))
+        if dialog.register_income.isChecked():self.register_work_income('trip',trip_id)
         self._sync_date()
         self.refresh()
         self.data_changed.emit()
@@ -711,11 +720,12 @@ class ViajesPage(QWidget):
             return
         values = dialog.values()
         try:
-            self.db.add_work_extra(values)
+            extra_id = self.db.add_work_extra(values)
         except Exception as exc:
             QMessageBox.warning(self, "Extras", str(exc))
             return
         self.current_week = monday_of(date.fromisoformat(values["work_date"]))
+        if dialog.register_income.isChecked():self.register_work_income('extra',extra_id)
         self._sync_date()
         self.refresh()
         self.data_changed.emit()
@@ -740,6 +750,7 @@ class ViajesPage(QWidget):
             QMessageBox.warning(self, "Extras", str(exc))
             return
         self.current_week = monday_of(date.fromisoformat(values["work_date"]))
+        if dialog.register_income.isChecked():self.register_work_income('extra',extra_id)
         self._sync_date()
         self.refresh()
         self.data_changed.emit()
@@ -767,6 +778,32 @@ class ViajesPage(QWidget):
 
     def edit_selected(self) -> None:
         self.edit_trip() if self.tabs.currentIndex() == 0 else self.edit_extra()
+
+    def register_selected_income(self):
+        kind='trip' if self.tabs.currentIndex()==0 else 'extra'
+        record_id=self._selected_trip_id() if kind=='trip' else self._selected_extra_id()
+        if record_id is None:
+            QMessageBox.information(self,'Registrar ingreso','Seleccioná primero un viaje o extra.')
+            return
+        self.register_work_income(kind,record_id)
+
+    def register_work_income(self,kind,record_id):
+        try:
+            draft=income_draft(self.db,kind,record_id)
+            dialog=TransactionDialog(self.db,parent=self)
+            dialog.set_kind('income')
+            dialog.amount.setValue(draft['amount'])
+            dialog.description.setText(draft['description'])
+            dialog.note.setPlainText(draft['note'])
+            dialog.date.setDate(QDate.fromString(draft['tx_date'],'yyyy-MM-dd'))
+            if dialog.exec()!=QDialog.DialogCode.Accepted:return
+            data=dialog.data()
+            if data['kind']!='income':raise ValueError('Este registro debe guardarse como ingreso.')
+            self.db.add_transaction(data,source=draft['source'],external_id=draft['external_id'])
+        except Exception as exc:
+            QMessageBox.warning(self,'Registrar ingreso',str(exc));return
+        self.data_changed.emit()
+        QMessageBox.information(self,'Ingreso registrado','El cobro ya está en Movimientos. Cambiar el viaje o extra no modifica automáticamente este ingreso.')
 
     def delete_selected(self) -> None:
         self.delete_trip() if self.tabs.currentIndex() == 0 else self.delete_extra()

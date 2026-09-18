@@ -134,7 +134,12 @@ def apply_cloud(db,document,expected,base,revision):
                 else:v.update(name=r['name'],amount=amount(r['amount']),start_date=day(r['date']))
                 save(table,r,v)
         for r in document['transactions']:
+            origin=r.get('work_origin')
+            if origin and (not isinstance(origin,dict) or origin.get('source') not in ('work_trip','work_extra') or not isinstance(origin.get('id'),str) or not origin['id']):
+                raise ValueError('Vínculo de ingreso inválido.')
             save('transactions',r,dict(kind=r['kind'],amount=amount(r['amount']),account_id=ref('accounts',r['account']),to_account_id=ref('accounts',r.get('to')),category_id=ref('categories',r.get('category')),tx_date=day(r['date']),description=r.get('description',''),note=r.get('note',''),tags=r.get('tags',''),recurring_id=ref('recurring_transactions',r.get('recurring')),installment_plan_id=ref('card_installment_plans',r.get('installment')),installment_number=r.get('number')))
+            if origin:
+                c.execute('UPDATE transactions SET source=?,external_id=? WHERE id=?',(origin['source'],origin['id'],ref('transactions',r['id'])))
         for r in document['adjustments']:
             save('account_adjustments',r,dict(account_id=ref('accounts',r['account']),amount=amount(r['amount']),adjustment_date=day(r['date'])))
         for i,r in enumerate(document['workFields']):

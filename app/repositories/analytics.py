@@ -91,7 +91,7 @@ class AnalyticsMixin:
                 SELECT COALESCE(root.id,c.id,0) category_id,
                        COALESCE(root.name,c.name,'Sin categoría') category,
                        COALESCE(root.color,c.color,'#94A3B8') color,
-                       COALESCE(root.secondary_color,c.secondary_color) secondary_color,
+                       CASE WHEN root.id IS NOT NULL THEN root.secondary_color ELSE c.secondary_color END secondary_color,
                        COALESCE(root.icon,c.icon,'other') icon,
                        SUM(t.amount) total,COUNT(*) tx_count
                 FROM transactions t
@@ -100,7 +100,7 @@ class AnalyticsMixin:
                 LEFT JOIN categories root ON root.id=tree.root_id
                 WHERE t.kind=? AND date(t.tx_date)>=date(?) AND date(t.tx_date)<=date(?)
                 GROUP BY COALESCE(root.id,c.id,0),COALESCE(root.name,c.name,'Sin categoría'),
-                         COALESCE(root.color,c.color,'#94A3B8'),COALESCE(root.secondary_color,c.secondary_color),COALESCE(root.icon,c.icon,'other')
+                         COALESCE(root.color,c.color,'#94A3B8'),CASE WHEN root.id IS NOT NULL THEN root.secondary_color ELSE c.secondary_color END,COALESCE(root.icon,c.icon,'other')
                 """,
                 (kind, start.isoformat(), end.isoformat()),
             ).fetchall())
@@ -132,7 +132,7 @@ class AnalyticsMixin:
                            COALESCE(root.name,c.name,h.category_name) category_name,
                            SUM(h.amount) total,COUNT(*) row_count,
                            COALESCE(root.color,c.color) color,
-                           COALESCE(root.secondary_color,c.secondary_color) secondary_color,
+                           CASE WHEN root.id IS NOT NULL THEN root.secondary_color ELSE c.secondary_color END secondary_color,
                            COALESCE(root.icon,c.icon) icon
                     FROM historical_monthly h
                     LEFT JOIN categories c ON c.id=h.category_id
@@ -140,7 +140,7 @@ class AnalyticsMixin:
                     LEFT JOIN categories root ON root.id=tree.root_id
                     WHERE h.kind=? AND ({clauses})
                     GROUP BY COALESCE(root.id,c.id,h.category_id),COALESCE(root.name,c.name,h.category_name),
-                             COALESCE(root.color,c.color),COALESCE(root.secondary_color,c.secondary_color),COALESCE(root.icon,c.icon)
+                             COALESCE(root.color,c.color),CASE WHEN root.id IS NOT NULL THEN root.secondary_color ELSE c.secondary_color END,COALESCE(root.icon,c.icon)
                     """,
                     params,
                 ).fetchall())
